@@ -4,37 +4,35 @@ import com.example.phase_02.basics.baseService.impl.BaseServiceImpl;
 import com.example.phase_02.entity.*;
 import com.example.phase_02.entity.enums.OrderStatus;
 import com.example.phase_02.exceptions.NotFoundException;
-import com.example.phase_02.repository.impl.CustomerRepositoryImpl;
-import com.example.phase_02.repository.impl.OrderRepositoryImpl;
-import com.example.phase_02.repository.impl.PersonRepositoryImpl;
+import com.example.phase_02.repository.CustomerRepository;
+import com.example.phase_02.service.CustomerService;
 import com.example.phase_02.utility.Constants;
-import entity.*;
 import com.example.phase_02.entity.dto.TechnicianSuggestionDTO;
 import com.example.phase_02.exceptions.NotEnoughCreditException;
-import com.example.phase_02.repository.impl.TechnicianSuggestionRepositoryImpl;
+import jakarta.persistence.PersistenceException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class CustomerServiceImpl extends BaseServiceImpl<CustomerRepositoryImpl, Customer> {
+public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements CustomerService {
 
+    private final CustomerRepository repository;
     private final PersonServiceImple personService;
     private final OrderServiceImpl orderService;
     private final TechnicianSuggestionServiceImpl technicianSuggestionService;
 
-    public CustomerServiceImpl(CustomerRepositoryImpl repository) {
-        super(repository);
-        OrderRepositoryImpl orderRepository = new OrderRepositoryImpl(Order.class);
-        orderService = new OrderServiceImpl(orderRepository);
-//        orderService = ApplicationContext.orderService;
-        PersonRepositoryImpl personRepository = new PersonRepositoryImpl(Person.class);
-        personService = new PersonServiceImple(personRepository);
-//        personService = ApplicationContext.personService;
-        TechnicianSuggestionRepositoryImpl technicianSuggestionRepository = new TechnicianSuggestionRepositoryImpl(TechnicianSuggestion.class);
-        technicianSuggestionService = new TechnicianSuggestionServiceImpl(technicianSuggestionRepository);
-//        technicianSuggestionService = ApplicationContext.technicianSuggestionService;
+    public CustomerServiceImpl(CustomerRepository repository,
+                               PersonServiceImple personService,
+                               OrderServiceImpl orderService,
+                               TechnicianSuggestionServiceImpl technicianSuggestionService) {
+        super();
+        this.repository = repository;
+        this.personService = personService;
+        this.orderService = orderService;
+        this.technicianSuggestionService = technicianSuggestionService;
     }
 
     public Customer specifyCustomer(){
@@ -237,5 +235,59 @@ public class CustomerServiceImpl extends BaseServiceImpl<CustomerRepositoryImpl,
         }
         else
             printer.printError("Scoring the 'technician' is an act of 'customer'");
+    }
+
+    @Override
+    public Customer saveOrUpdate(Customer t) {
+        if(!isValid(t))
+            return null;
+        try{
+            return repository.save(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            printer.printError(e.getMessage());
+            printer.printError(Arrays.toString(e.getStackTrace()));
+            input.nextLine();
+            return null;
+        }
+    }
+
+    @Override
+    public void delete(Customer t) {
+        if(!isValid(t))
+            return;
+        try{
+            repository.delete(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            if(e instanceof PersistenceException)
+                printer.printError("Could not delete " + repository.getClass().getSimpleName());
+            else
+                printer.printError("Could not complete deletion. Specified " + repository.getClass().getSimpleName() + " not found!");
+            printer.printError(Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    @Override
+    public Customer findById(long id) {
+        try{
+            return repository.findById(id).orElseThrow(()-> new NotFoundException("\nCould not find " + repository.getClass().getSimpleName()
+                    + " with id = " + id));
+        } catch (RuntimeException | NotFoundException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public List<Customer> findAll() {
+        try{
+            return repository.findAll();
+        } catch (RuntimeException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
     }
 }

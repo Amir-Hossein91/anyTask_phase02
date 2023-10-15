@@ -4,12 +4,10 @@ import com.example.phase_02.basics.baseService.impl.BaseServiceImpl;
 import com.example.phase_02.entity.*;
 import com.example.phase_02.entity.enums.TechnicianStatus;
 import com.example.phase_02.exceptions.*;
-import com.example.phase_02.repository.impl.TechnicianRepositoryImpl;
+import com.example.phase_02.repository.TechnicianRepository;
 import com.example.phase_02.service.TechnicianService;
-import com.example.phase_02.utility.ApplicationContext;
 import com.example.phase_02.utility.Constants;
-import entity.*;
-import exceptions.*;
+import jakarta.persistence.PersistenceException;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -20,20 +18,28 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class TechnicianServiceImpl extends BaseServiceImpl<TechnicianRepositoryImpl, Technician> implements TechnicianService {
+public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implements TechnicianService {
 
+    private final TechnicianRepository repository;
     private final PersonServiceImple personService;
     private final SubAssistanceServiceImpl subAssistanceService;
     private final AssistanceServiceImpl assistanceService;
     private final OrderServiceImpl orderService;
 
-    public TechnicianServiceImpl(TechnicianRepositoryImpl repository) {
-        super(repository);
-        personService = ApplicationContext.personService;
-        subAssistanceService = ApplicationContext.subAssistanceService;
-        assistanceService = ApplicationContext.assistanceService;
-        orderService = ApplicationContext.orderService;
+    public TechnicianServiceImpl(TechnicianRepository repository,
+                                 PersonServiceImple personService,
+                                 SubAssistanceServiceImpl subAssistanceService,
+                                 AssistanceServiceImpl assistanceService,
+                                 OrderServiceImpl orderService) {
+        super();
+        this.repository = repository;
+        this.personService = personService;
+        this.subAssistanceService = subAssistanceService;
+        this.assistanceService = assistanceService;
+        this.orderService = orderService;
     }
+
+
 
     public Technician specifyTechnician(Path path){
         printer.getInput("first name");
@@ -150,23 +156,71 @@ public class TechnicianServiceImpl extends BaseServiceImpl<TechnicianRepositoryI
     }
 
     @Override
+    public Technician saveOrUpdate(Technician t) {
+        if(!isValid(t))
+            return null;
+        try{
+            return repository.save(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            printer.printError(e.getMessage());
+            printer.printError(Arrays.toString(e.getStackTrace()));
+            input.nextLine();
+            return null;
+        }
+    }
+
+    @Override
+    public void delete(Technician t) {
+        if(!isValid(t))
+            return;
+        try{
+            repository.delete(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            if(e instanceof PersistenceException)
+                printer.printError("Could not delete " + repository.getClass().getSimpleName());
+            else
+                printer.printError("Could not complete deletion. Specified " + repository.getClass().getSimpleName() + " not found!");
+            printer.printError(Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    @Override
+    public Technician findById(long id) {
+        try{
+            return repository.findById(id).orElseThrow(()-> new NotFoundException("\nCould not find " + repository.getClass().getSimpleName()
+                    + " with id = " + id));
+        } catch (RuntimeException | NotFoundException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public List<Technician> findAll() {
+        try{
+            return repository.findAll();
+        } catch (RuntimeException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
     public List<Technician> saveOrUpdate(List<Technician> technicians) {
         try{
             for(Technician t: technicians) {
                 if (!isValid(t))
                     return null;
             }
-            if(!transaction.isActive()){
-                transaction.begin();
-               technicians = repository.saveOrUpdate(technicians).orElse(null);
-                transaction.commit();
-            }
-            else
-                technicians = repository.saveOrUpdate(technicians).orElse(null);
+            technicians = repository.saveAll(technicians);
             if(technicians != null)
                 printer.printMessage("Technician list saved successfully!");
             return technicians;
-        } catch (NotSavedException | RuntimeException e){
+        } catch (RuntimeException e){
             if(transaction.isActive())
                 transaction.rollback();
             printer.printError(e.getMessage());

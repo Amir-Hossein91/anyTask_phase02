@@ -6,7 +6,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+
 @Repository
-public interface AssistanceRepository {
-    Optional<Assistance> findAssistance(String assistanceName);
+public interface AssistanceRepository extends JpaRepository<Assistance,Long> {
+    Optional<Assistance> findByTitle (String title);
+
 }

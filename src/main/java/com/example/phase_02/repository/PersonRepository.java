@@ -1,9 +1,13 @@
 package com.example.phase_02.repository;
 
 import com.example.phase_02.entity.Person;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-public interface PersonRepository {
-    Optional<Person> findByUsername(String username);
+@Repository
+public interface PersonRepository extends JpaRepository<Person,Long> {
+
+    Optional<Person> findByUsername (String username);
 }

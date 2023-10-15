@@ -5,34 +5,88 @@ import com.example.phase_02.entity.*;
 import com.example.phase_02.exceptions.DeactivatedTechnicianException;
 import com.example.phase_02.exceptions.NoSuchAsssistanceCategoryException;
 import com.example.phase_02.exceptions.NotFoundException;
+import com.example.phase_02.repository.SubAssistanceRepository;
 import com.example.phase_02.service.SubAssistanceService;
-import com.example.phase_02.utility.ApplicationContext;
 import com.example.phase_02.utility.Constants;
-import entity.*;
 import com.example.phase_02.exceptions.DuplicateSubAssistanceException;
-import com.example.phase_02.repository.impl.SubAssistanceRepositoryImpl;
+import jakarta.persistence.PersistenceException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
-public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistanceRepositoryImpl, SubAssistance> implements SubAssistanceService {
+public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> implements SubAssistanceService {
 
+    private SubAssistanceRepository repository;
     private PersonServiceImple personService;
     private AssistanceServiceImpl assistanceService;
 
-    public SubAssistanceServiceImpl(SubAssistanceRepositoryImpl repository) {
-        super(repository);
-        personService = ApplicationContext.personService;
-        assistanceService = ApplicationContext.assistanceService;
+    public SubAssistanceServiceImpl(SubAssistanceRepository repository,
+                                    PersonServiceImple personService,
+                                    AssistanceServiceImpl assistanceService) {
+        super();
+        this.repository = repository;
+        this.personService = personService;
+        this.assistanceService = assistanceService;
+    }
+
+    @Override
+    public SubAssistance saveOrUpdate(SubAssistance t) {
+        if(!isValid(t))
+            return null;
+        try{
+            return repository.save(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            printer.printError(e.getMessage());
+            printer.printError(Arrays.toString(e.getStackTrace()));
+            input.nextLine();
+            return null;
+        }
+    }
+
+    @Override
+    public void delete(SubAssistance t) {
+        if(!isValid(t))
+            return;
+        try{
+            repository.delete(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            if(e instanceof PersistenceException)
+                printer.printError("Could not delete " + repository.getClass().getSimpleName());
+            else
+                printer.printError("Could not complete deletion. Specified " + repository.getClass().getSimpleName() + " not found!");
+            printer.printError(Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    @Override
+    public SubAssistance findById(long id) {
+        try{
+            return repository.findById(id).orElseThrow(()-> new NotFoundException("\nCould not find " + repository.getClass().getSimpleName()
+                    + " with id = " + id));
+        } catch (RuntimeException | NotFoundException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public List<SubAssistance> findAll() {
+        try{
+            return repository.findAll();
+        } catch (RuntimeException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
     }
 
     @Override
     public SubAssistance findSubAssistance(String title, Assistance assistance) {
-        return repository.findSubAssistance(title, assistance).orElse(null);
+        return repository.findByTitleAndAssistance(title, assistance).orElse(null);
     }
 
     public SubAssistance specifySubAssistance(Assistance assistance, String title){

@@ -2,32 +2,35 @@ package com.example.phase_02.service.impl;
 
 import com.example.phase_02.basics.baseService.impl.BaseServiceImpl;
 import com.example.phase_02.entity.Order;
+import com.example.phase_02.repository.TechnicianSuggestionRepository;
 import com.example.phase_02.service.TechnicianSuggestionService;
-import com.example.phase_02.utility.ApplicationContext;
 import com.example.phase_02.utility.Constants;
 import com.example.phase_02.entity.Manager;
 import com.example.phase_02.entity.Person;
 import com.example.phase_02.entity.TechnicianSuggestion;
 import com.example.phase_02.entity.dto.TechnicianSuggestionDTO;
 import com.example.phase_02.exceptions.NotFoundException;
-import com.example.phase_02.repository.impl.TechnicianSuggestionRepositoryImpl;
+import jakarta.persistence.PersistenceException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class TechnicianSuggestionServiceImpl extends
-        BaseServiceImpl<TechnicianSuggestionRepositoryImpl, TechnicianSuggestion> implements
-        TechnicianSuggestionService {
+public class TechnicianSuggestionServiceImpl extends BaseServiceImpl<TechnicianSuggestion> implements TechnicianSuggestionService {
 
-    private PersonServiceImple personService;
+    private final TechnicianSuggestionRepository repository;
+    private final PersonServiceImple personService;
 
-    public TechnicianSuggestionServiceImpl(TechnicianSuggestionRepositoryImpl repository) {
-        super(repository);
-        personService = ApplicationContext.personService;
+    public TechnicianSuggestionServiceImpl(TechnicianSuggestionRepository repository, PersonServiceImple personService) {
+        super();
+        this.repository = repository;
+        this.personService = personService;
     }
+
+
 
     public List<String> showAllSuggestions(String managerUsername){
         Person person = personService.findByUsername(managerUsername);
@@ -41,9 +44,63 @@ public class TechnicianSuggestionServiceImpl extends
     }
 
     @Override
+    public TechnicianSuggestion saveOrUpdate(TechnicianSuggestion t) {
+        if(!isValid(t))
+            return null;
+        try{
+            return repository.save(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            printer.printError(e.getMessage());
+            printer.printError(Arrays.toString(e.getStackTrace()));
+            input.nextLine();
+            return null;
+        }
+    }
+
+    @Override
+    public void delete(TechnicianSuggestion t) {
+        if(!isValid(t))
+            return;
+        try{
+            repository.delete(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            if(e instanceof PersistenceException)
+                printer.printError("Could not delete " + repository.getClass().getSimpleName());
+            else
+                printer.printError("Could not complete deletion. Specified " + repository.getClass().getSimpleName() + " not found!");
+            printer.printError(Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    @Override
+    public TechnicianSuggestion findById(long id) {
+        try{
+            return repository.findById(id).orElseThrow(()-> new NotFoundException("\nCould not find " + repository.getClass().getSimpleName()
+                    + " with id = " + id));
+        } catch (RuntimeException | NotFoundException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public List<TechnicianSuggestion> findAll() {
+        try{
+            return repository.findAll();
+        } catch (RuntimeException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
     public List<TechnicianSuggestionDTO> getSuggestionsOf(Order order) {
         try{
-            List<TechnicianSuggestion> suggestions = repository.findTechnitionSugestions(order).orElseThrow(
+            List<TechnicianSuggestion> suggestions = repository.findByOrder(order).orElseThrow(
                     () -> new NotFoundException(Constants.NO_TECHNICIAN_SUGGESTION_FOUND)
             );
             List<TechnicianSuggestionDTO> result = new ArrayList<>();

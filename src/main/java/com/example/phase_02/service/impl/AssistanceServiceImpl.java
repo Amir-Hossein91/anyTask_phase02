@@ -8,29 +8,85 @@ import com.example.phase_02.entity.Technician;
 import com.example.phase_02.exceptions.DeactivatedTechnicianException;
 import com.example.phase_02.exceptions.DuplicateAssistanceException;
 import com.example.phase_02.exceptions.NotFoundException;
-import com.example.phase_02.repository.impl.AssistanceRepositoryImpl;
-import com.example.phase_02.repository.impl.PersonRepositoryImpl;
+import com.example.phase_02.repository.AssistanceRepository;
 import com.example.phase_02.service.AssistanceService;
 import com.example.phase_02.utility.Constants;
+import jakarta.persistence.PersistenceException;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class AssistanceServiceImpl extends BaseServiceImpl<AssistanceRepositoryImpl, Assistance> implements AssistanceService {
+public class AssistanceServiceImpl extends BaseServiceImpl<Assistance> implements AssistanceService {
+    private AssistanceRepository repository;
 
     private PersonServiceImple personService;
 
-    public AssistanceServiceImpl(AssistanceRepositoryImpl repository) {
-        super(repository);
-        PersonRepositoryImpl personRepository = new PersonRepositoryImpl(Person.class);
-        personService = new PersonServiceImple(personRepository);
-//        personService = ApplicationContext.personService;
+    public AssistanceServiceImpl(AssistanceRepository repository, PersonServiceImple personService) {
+        super();
+        this.repository = repository;
+        this.personService = personService;
+    }
+
+    @Override
+    public Assistance saveOrUpdate(Assistance t) {
+        if(!isValid(t))
+            return null;
+        try{
+           return repository.save(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            printer.printError(e.getMessage());
+            printer.printError(Arrays.toString(e.getStackTrace()));
+            input.nextLine();
+            return null;
+        }
+    }
+
+    @Override
+    public void delete(Assistance t) {
+        if(!isValid(t))
+            return;
+        try{
+            repository.delete(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            if(e instanceof PersistenceException)
+                printer.printError("Could not delete " + repository.getClass().getSimpleName());
+            else
+                printer.printError("Could not complete deletion. Specified " + repository.getClass().getSimpleName() + " not found!");
+            printer.printError(Arrays.toString(e.getStackTrace()));
+        }
+
+    }
+
+    @Override
+    public Assistance findById(long id) {
+        try{
+            return repository.findById(id).orElseThrow(()-> new NotFoundException("\nCould not find " + repository.getClass().getSimpleName()
+                    + " with id = " + id));
+        } catch (RuntimeException | NotFoundException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public List<Assistance> findAll() {
+        try{
+            return repository.findAll();
+        } catch (RuntimeException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
     }
 
     @Override
     public Assistance findAssistance(String assistanceName) {
-        return repository.findAssistance(assistanceName).orElse(null);
+        return repository.findByTitle(assistanceName).orElse(null);
     }
 
     public void addAssistance(String username, String assistanceName){

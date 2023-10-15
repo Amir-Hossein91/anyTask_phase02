@@ -1,42 +1,46 @@
 package com.example.phase_02.service.impl;
 
 import com.example.phase_02.basics.baseService.impl.BaseServiceImpl;
-import com.example.phase_02.entity.SubAssistance;
-import com.example.phase_02.repository.impl.PersonRepositoryImpl;
-import com.example.phase_02.repository.impl.TechnicianRepositoryImpl;
+import com.example.phase_02.repository.PersonRepository;
 import com.example.phase_02.utility.ApplicationContext;
 import com.example.phase_02.utility.Constants;
 import com.example.phase_02.entity.Manager;
 import com.example.phase_02.entity.Person;
 import com.example.phase_02.entity.Technician;
 import com.example.phase_02.exceptions.NotFoundException;
-import com.example.phase_02.repository.impl.SubAssistanceRepositoryImpl;
+
 import com.example.phase_02.service.PersonService;
+import jakarta.persistence.PersistenceException;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
-//testing the remote
+
 @Service
-public class PersonServiceImple extends BaseServiceImpl<PersonRepositoryImpl, Person> implements PersonService {
+public class PersonServiceImple extends BaseServiceImpl<Person> implements PersonService {
+
+    private final PersonRepository repository;
     private final ManagerServiceImpl managerService;
     private final CustomerServiceImpl customerService;
     private final TechnicianServiceImpl technicianService;
     private final AssistanceServiceImpl assistanceService;
     private final SubAssistanceServiceImpl subAssistanceService;
 
-    public PersonServiceImple(PersonRepositoryImpl repository) {
-        super(repository);
-        managerService = ApplicationContext.managerService;
-        customerService = ApplicationContext.customerService;
-        TechnicianRepositoryImpl technicianRepository = new TechnicianRepositoryImpl(Technician.class);
-        technicianService = new TechnicianServiceImpl(technicianRepository);
-//        technicianService = ApplicationContext.technicianService;
-        assistanceService = ApplicationContext.assistanceService;
-        SubAssistanceRepositoryImpl subAssistanceRepository = new SubAssistanceRepositoryImpl(SubAssistance.class);
-        subAssistanceService = new SubAssistanceServiceImpl(subAssistanceRepository);
-//        subAssistanceService = ApplicationContext.subAssistanceService;
+    public PersonServiceImple(PersonRepository repository,
+                              ManagerServiceImpl managerService,
+                              CustomerServiceImpl customerService,
+                              TechnicianServiceImpl technicianService,
+                              AssistanceServiceImpl assistanceService,
+                              SubAssistanceServiceImpl subAssistanceService) {
+        super();
+        this.repository = repository;
+        this.managerService = managerService;
+        this.customerService = customerService;
+        this.technicianService = technicianService;
+        this.assistanceService = assistanceService;
+        this.subAssistanceService = subAssistanceService;
     }
 
     public Person specifyPerson(){
@@ -67,6 +71,60 @@ public class PersonServiceImple extends BaseServiceImpl<PersonRepositoryImpl, Pe
             } catch (IllegalArgumentException e) {
                 printer.printError(e.getMessage());
             }
+        }
+    }
+
+    @Override
+    public Person saveOrUpdate(Person t) {
+        if(!isValid(t))
+            return null;
+        try{
+            return repository.save(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            printer.printError(e.getMessage());
+            printer.printError(Arrays.toString(e.getStackTrace()));
+            input.nextLine();
+            return null;
+        }
+    }
+
+    @Override
+    public void delete(Person t) {
+        if(!isValid(t))
+            return;
+        try{
+            repository.delete(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            if(e instanceof PersistenceException)
+                printer.printError("Could not delete " + repository.getClass().getSimpleName());
+            else
+                printer.printError("Could not complete deletion. Specified " + repository.getClass().getSimpleName() + " not found!");
+            printer.printError(Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    @Override
+    public Person findById(long id) {
+        try{
+            return repository.findById(id).orElseThrow(()-> new NotFoundException("\nCould not find " + repository.getClass().getSimpleName()
+                    + " with id = " + id));
+        } catch (RuntimeException | NotFoundException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public List<Person> findAll() {
+        try{
+            return repository.findAll();
+        } catch (RuntimeException e){
+            printer.printError(e.getMessage());
+            return null;
         }
     }
 

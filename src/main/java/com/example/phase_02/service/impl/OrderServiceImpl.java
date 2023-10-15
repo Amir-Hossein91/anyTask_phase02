@@ -5,38 +5,37 @@ import com.example.phase_02.entity.*;
 import com.example.phase_02.entity.dto.OrderDTO;
 import com.example.phase_02.entity.enums.OrderStatus;
 import com.example.phase_02.exceptions.NotFoundException;
-import com.example.phase_02.repository.impl.OrderRepositoryImpl;
-import com.example.phase_02.repository.impl.PersonRepositoryImpl;
+import com.example.phase_02.repository.OrderRepository;
 import com.example.phase_02.service.OrderService;
-import com.example.phase_02.utility.ApplicationContext;
 import com.example.phase_02.utility.Constants;
 import com.github.mfathi91.time.PersianDate;
-import entity.*;
-import com.example.phase_02.repository.impl.SubAssistanceRepositoryImpl;
+import jakarta.persistence.PersistenceException;
 import org.springframework.stereotype.Service;
 
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class OrderServiceImpl extends BaseServiceImpl<OrderRepositoryImpl, Order> implements OrderService {
+public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderService {
 
+    private final OrderRepository repository;
     private final PersonServiceImple personService;
     private final AssistanceServiceImpl assistanceService;
     private final SubAssistanceServiceImpl subAssistanceService;
 
-    public OrderServiceImpl(OrderRepositoryImpl repository) {
-        super(repository);
-        PersonRepositoryImpl personRepository = new PersonRepositoryImpl(Person.class);
-        personService = new PersonServiceImple(personRepository);
-//        personService = ApplicationContext.personService;
-        assistanceService = ApplicationContext.assistanceService;
-        SubAssistanceRepositoryImpl subAssistanceRepository = new SubAssistanceRepositoryImpl(SubAssistance.class);
-        subAssistanceService = new SubAssistanceServiceImpl(subAssistanceRepository);
-//        subAssistanceService = ApplicationContext.subAssistanceService;
+    public OrderServiceImpl(OrderRepository repository,
+                            PersonServiceImple personService,
+                            AssistanceServiceImpl assistanceService,
+                            SubAssistanceServiceImpl subAssistanceService) {
+        super();
+        this.repository = repository;
+        this.personService = personService;
+        this.assistanceService = assistanceService;
+        this.subAssistanceService = subAssistanceService;
     }
 
     public List<String> showAllOrders(String managerUsername){
@@ -120,6 +119,60 @@ public class OrderServiceImpl extends BaseServiceImpl<OrderRepositoryImpl, Order
             }
         }
         return orderDescription;
+    }
+
+    @Override
+    public Order saveOrUpdate(Order t) {
+        if(!isValid(t))
+            return null;
+        try{
+            return repository.save(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            printer.printError(e.getMessage());
+            printer.printError(Arrays.toString(e.getStackTrace()));
+            input.nextLine();
+            return null;
+        }
+    }
+
+    @Override
+    public void delete(Order t) {
+        if(!isValid(t))
+            return;
+        try{
+            repository.delete(t);
+        } catch (RuntimeException e){
+            if(transaction.isActive())
+                transaction.rollback();
+            if(e instanceof PersistenceException)
+                printer.printError("Could not delete " + repository.getClass().getSimpleName());
+            else
+                printer.printError("Could not complete deletion. Specified " + repository.getClass().getSimpleName() + " not found!");
+            printer.printError(Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    @Override
+    public Order findById(long id) {
+        try{
+            return repository.findById(id).orElseThrow(()-> new NotFoundException("\nCould not find " + repository.getClass().getSimpleName()
+                    + " with id = " + id));
+        } catch (RuntimeException | NotFoundException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public List<Order> findAll() {
+        try{
+            return repository.findAll();
+        } catch (RuntimeException e){
+            printer.printError(e.getMessage());
+            return null;
+        }
     }
 
     public List<OrderDTO> findRelatedOrders(Technician technician){

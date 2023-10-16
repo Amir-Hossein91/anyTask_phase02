@@ -10,6 +10,7 @@ import com.example.phase_02.service.SubAssistanceService;
 import com.example.phase_02.utility.Constants;
 import com.example.phase_02.exceptions.DuplicateSubAssistanceException;
 import jakarta.persistence.PersistenceException;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -17,15 +18,18 @@ import java.util.*;
 @Service
 public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> implements SubAssistanceService {
 
-    private SubAssistanceRepository repository;
-    private PersonServiceImple personService;
-    private AssistanceServiceImpl assistanceService;
+    private final SubAssistanceRepository repository;
+    private final ManagerServiceImpl managerService;
+    private final PersonServiceImple personService;
+    private final AssistanceServiceImpl assistanceService;
 
     public SubAssistanceServiceImpl(SubAssistanceRepository repository,
-                                    PersonServiceImple personService,
+                                    ManagerServiceImpl managerService,
+                                    @Lazy PersonServiceImple personService,
                                     AssistanceServiceImpl assistanceService) {
         super();
         this.repository = repository;
+        this.managerService = managerService;
         this.personService = personService;
         this.assistanceService = assistanceService;
     }
@@ -37,8 +41,8 @@ public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> imp
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
+//            if(transaction.isActive())
+//                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -53,8 +57,6 @@ public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> imp
         try{
             repository.delete(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             if(e instanceof PersistenceException)
                 printer.printError("Could not delete " + repository.getClass().getSimpleName());
             else
@@ -99,8 +101,8 @@ public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> imp
     }
 
     public void addSubAssistance(String username, String assistanceTitle, String subAssistanceTitle){
-        Person person = personService.findByUsername(username);
-        if(person instanceof Manager){
+        Manager manager = managerService.findByUsername(username);
+        if(manager != null){
             try{
                 Assistance assistance = assistanceService.findAssistance(assistanceTitle);
                 if(assistance == null)
@@ -155,8 +157,8 @@ public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> imp
     }
 
     public void changeDescription(String managerUsername,String assistanceTitle, String subAssistanceTitle, String newDescription){
-        Person person = personService.findByUsername(managerUsername);
-        if(person instanceof Manager){
+        Manager manager = managerService.findByUsername(managerUsername);
+        if(manager != null){
             try{
                 Assistance assistance = assistanceService.findAssistance(assistanceTitle);
                 if(assistance == null)
@@ -176,8 +178,8 @@ public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> imp
     }
 
     public void changeBasePrice(String managerUsername,String assistanceTitle, String subAssistanceTitle, long basePrice){
-        Person person = personService.findByUsername(managerUsername);
-        if(person instanceof Manager){
+        Manager manager = managerService.findByUsername(managerUsername);
+        if(manager != null){
             try{
                 Assistance assistance = assistanceService.findAssistance(assistanceTitle);
                 if(assistance == null)

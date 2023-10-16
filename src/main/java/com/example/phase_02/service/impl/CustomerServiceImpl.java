@@ -278,7 +278,7 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
                 if(!order.getCustomer().equals(customer))
                     throw new NotFoundException(Constants.ORDER_NOT_BELONG_TO_CUSTOMER);
 
-                if(order.getOrderStatus() != OrderStatus.STARTED)
+                if(order.getOrderStatus() != OrderStatus.FINISHED)
                     throw new IllegalStateException(Constants.PAYING_NOT_POSSIBLE_IN_THIS_STATE);
 
                 TechnicianSuggestion selecteSuggestion = new TechnicianSuggestion();
@@ -296,7 +296,7 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
 
                 selectedTechnician.setCredit(selectedTechnician.getCredit() + selecteSuggestion.getTechSuggestedPrice());
                 selectedTechnician.setNumberOfFinishedTasks(selectedTechnician.getNumberOfFinishedTasks() + 1);
-                order.setOrderStatus(OrderStatus.FINISHED);
+                order.setOrderStatus(OrderStatus.FULLY_PAID);
                 customer = saveOrUpdate(customer);
                 order = orderService.saveOrUpdate(order);
 

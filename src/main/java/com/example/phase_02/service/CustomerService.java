@@ -6,5 +6,5 @@ import com.example.phase_02.entity.Customer;
 import java.util.List;
 
 public interface CustomerService extends BaseService<Customer> {
-
+    Customer findByUsername (String customerUsername);
 }

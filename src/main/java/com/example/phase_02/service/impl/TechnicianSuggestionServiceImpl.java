@@ -6,7 +6,6 @@ import com.example.phase_02.repository.TechnicianSuggestionRepository;
 import com.example.phase_02.service.TechnicianSuggestionService;
 import com.example.phase_02.utility.Constants;
 import com.example.phase_02.entity.Manager;
-import com.example.phase_02.entity.Person;
 import com.example.phase_02.entity.TechnicianSuggestion;
 import com.example.phase_02.entity.dto.TechnicianSuggestionDTO;
 import com.example.phase_02.exceptions.NotFoundException;
@@ -94,9 +93,9 @@ public class TechnicianSuggestionServiceImpl extends BaseServiceImpl<TechnicianS
     }
 
     @Override
-    public List<TechnicianSuggestionDTO> getSuggestionsOf(Order order) {
+    public List<TechnicianSuggestionDTO> getSuggestionsOrderedByPrice(Order order) {
         try{
-            List<TechnicianSuggestion> suggestions = repository.findByOrder(order).orElseThrow(
+            List<TechnicianSuggestion> suggestions = repository.findByOrderOrderByTechSuggestedPriceAsc(order).orElseThrow(
                     () -> new NotFoundException(Constants.NO_TECHNICIAN_SUGGESTION_FOUND)
             );
             List<TechnicianSuggestionDTO> result = new ArrayList<>();
@@ -119,7 +118,33 @@ public class TechnicianSuggestionServiceImpl extends BaseServiceImpl<TechnicianS
             printer.printError(e.getMessage());
             return null;
         }
+    }
 
-
+    @Override
+    public List<TechnicianSuggestionDTO> getSuggestionsOrderedByScore(Order order) {
+        try{
+            List<TechnicianSuggestion> suggestions = repository.findByOrderOrderByTechnicianScore(order).orElseThrow(
+                    () -> new NotFoundException(Constants.NO_TECHNICIAN_SUGGESTION_FOUND)
+            );
+            List<TechnicianSuggestionDTO> result = new ArrayList<>();
+            for(TechnicianSuggestion t : suggestions){
+                TechnicianSuggestionDTO suggestionDTO = TechnicianSuggestionDTO.builder()
+                        .suggestionId(t.getId())
+                        .suggestionRegistrationDate(LocalDateTime.now())
+                        .technicianFirstname(t.getTechnician().getFirstName())
+                        .technicianLastname(t.getTechnician().getLastName())
+                        .technicianId(t.getTechnician().getId())
+                        .technicianScore(t.getTechnician().getScore())
+                        .numberOfFinishedTasks(t.getTechnician().getNumberOfFinishedTasks())
+                        .suggestedPrice(t.getTechSuggestedPrice())
+                        .suggestedDate(t.getTechSuggestedDate())
+                        .taskEstimatedDuration(t.getTaskEstimatedDuration()).build();
+                result.add(suggestionDTO);
+            }
+            return result;
+        } catch (NotFoundException e) {
+            printer.printError(e.getMessage());
+            return null;
+        }
     }
 }

@@ -95,14 +95,37 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
         return true;
     }
 
-    public List<String> seeTechnicianSuggestions(String customerUsername, long orderId){
+    public List<String> seeTechnicianSuggestionsOrderedByPrice(String customerUsername, long orderId){
         Customer customer = findByUsername(customerUsername);
         if(customer != null){
             Order order = orderService.findById(orderId);
             if(!isSuggestionChoosingPossible(customer,order))
                 return List.of();
 
-            List<TechnicianSuggestionDTO> technicianSuggestions = technicianSuggestionService.getSuggestionsOf(order);
+            List<TechnicianSuggestionDTO> technicianSuggestions = technicianSuggestionService.getSuggestionsOrderedByPrice(order);
+            if(technicianSuggestions == null)
+                return List.of();
+
+            if(order.getOrderStatus() == OrderStatus.WAITING_FOR_TECHNICIANS_SUGGESTIONS) {
+                order.setOrderStatus(OrderStatus.CHOOSING_TECHNICIAN);
+                orderService.saveOrUpdate(order);
+            }
+            return technicianSuggestions.stream().map(Object::toString).toList();
+        }
+        else {
+            printer.printError("Only customers have access to this function");
+            return List.of();
+        }
+    }
+
+    public List<String> seeTechnicianSuggestionsOrderedByScore(String customerUsername, long orderId){
+        Customer customer = findByUsername(customerUsername);
+        if(customer != null){
+            Order order = orderService.findById(orderId);
+            if(!isSuggestionChoosingPossible(customer,order))
+                return List.of();
+
+            List<TechnicianSuggestionDTO> technicianSuggestions = technicianSuggestionService.getSuggestionsOrderedByScore(order);
             if(technicianSuggestions == null)
                 return List.of();
 
@@ -125,7 +148,7 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
             if(!isSuggestionChoosingPossible(customer,order))
                 return;
 
-            List<TechnicianSuggestionDTO> technicianSuggestions = technicianSuggestionService.getSuggestionsOf(order);
+            List<TechnicianSuggestionDTO> technicianSuggestions = technicianSuggestionService.getSuggestionsOrderedByPrice(order);
             try{
                 if(technicianSuggestions == null)
                     throw new NotFoundException(Constants.NO_TECHNICIAN_SUGGESTION_FOUND);

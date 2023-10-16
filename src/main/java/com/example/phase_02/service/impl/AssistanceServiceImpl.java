@@ -3,7 +3,6 @@ package com.example.phase_02.service.impl;
 import com.example.phase_02.basics.baseService.impl.BaseServiceImpl;
 import com.example.phase_02.entity.Assistance;
 import com.example.phase_02.entity.Manager;
-import com.example.phase_02.entity.Person;
 import com.example.phase_02.entity.Technician;
 import com.example.phase_02.exceptions.DeactivatedTechnicianException;
 import com.example.phase_02.exceptions.DuplicateAssistanceException;
@@ -41,8 +40,6 @@ public class AssistanceServiceImpl extends BaseServiceImpl<Assistance> implement
         try{
            return repository.save(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -57,8 +54,6 @@ public class AssistanceServiceImpl extends BaseServiceImpl<Assistance> implement
         try{
             repository.delete(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             if(e instanceof PersistenceException)
                 printer.printError("Could not delete " + repository.getClass().getSimpleName());
             else

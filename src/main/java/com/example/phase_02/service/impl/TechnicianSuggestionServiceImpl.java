@@ -22,19 +22,19 @@ import java.util.List;
 public class TechnicianSuggestionServiceImpl extends BaseServiceImpl<TechnicianSuggestion> implements TechnicianSuggestionService {
 
     private final TechnicianSuggestionRepository repository;
-    private final PersonServiceImple personService;
+    private final ManagerServiceImpl managerService;
 
-    public TechnicianSuggestionServiceImpl(TechnicianSuggestionRepository repository, PersonServiceImple personService) {
+    public TechnicianSuggestionServiceImpl(TechnicianSuggestionRepository repository, ManagerServiceImpl managerService) {
         super();
         this.repository = repository;
-        this.personService = personService;
+        this.managerService = managerService;
     }
 
 
 
     public List<String> showAllSuggestions(String managerUsername){
-        Person person = personService.findByUsername(managerUsername);
-        if(person instanceof Manager){
+        Manager manager = managerService.findByUsername(managerUsername);
+        if(manager != null){
             return findAll().stream().map(Object::toString).toList();
         }
         else{
@@ -50,8 +50,6 @@ public class TechnicianSuggestionServiceImpl extends BaseServiceImpl<TechnicianS
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -66,8 +64,6 @@ public class TechnicianSuggestionServiceImpl extends BaseServiceImpl<TechnicianS
         try{
             repository.delete(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             if(e instanceof PersistenceException)
                 printer.printError("Could not delete " + repository.getClass().getSimpleName());
             else

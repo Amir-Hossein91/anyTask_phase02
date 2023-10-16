@@ -178,6 +178,52 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
             printer.printError("Only customers have access to this function");
     }
 
+    public void markOrderAsStarted (String customerUsername, long orderId, long suggestionId){
+        Customer customer = findByUsername(customerUsername);
+        if(customer != null){
+            Order order = orderService.findById(orderId);
+            try{
+                if(order == null)
+                    throw new NotFoundException(Constants.NO_SUCH_ORDER);
+
+                if(!order.getCustomer().equals(customer))
+                    throw new NotFoundException(Constants.ORDER_NOT_BELONG_TO_CUSTOMER);
+
+                if(order.getOrderStatus()!= OrderStatus.TECHNICIAN_IS_ON_THE_WAY)
+                    throw new IllegalStateException(Constants.NO_TECHNICIAN_SELECTED);
+
+                List<TechnicianSuggestionDTO> technicianSuggestions = technicianSuggestionService.getSuggestionsOrderedByPrice(order);
+
+                List<Long> suggestionsIds = technicianSuggestions.stream()
+                        .map(TechnicianSuggestionDTO::getSuggestionId)
+                        .toList();
+
+                TechnicianSuggestion suggestion = technicianSuggestionService.findById(suggestionId);
+                if(suggestion == null)
+                    throw new NotFoundException(Constants.TECHNICIAN_SUGGESTION_NOT_EXIST);
+
+                if(!suggestionsIds.contains(suggestion.getId()))
+                    throw new NotFoundException(Constants.TECHNICIAN_SUGGESTION_NOT_IN_LIST);
+
+                if(!suggestion.getTechnician().equals(order.getTechnician()))
+                    throw new NotFoundException(Constants.SUGGESTION_IS_NOT_THE_CHOSEN_ONE);
+
+                if(LocalDateTime.now().isBefore(suggestion.getTechSuggestedDate()))
+                    throw new IllegalStateException(Constants.ORDER_CANT_START_BEFORE_SUGGESTED_TIME);
+
+                order.setOrderStatus(OrderStatus.STARTED);
+                order = orderService.saveOrUpdate(order);
+
+                if(order != null)
+                    printer.printMessage("The technician arrived and started working");
+            } catch (NotFoundException | IllegalStateException e) {
+                printer.printError(e.getMessage());
+            }
+        }
+        else
+            printer.printError("Only customers have access to this function");
+    }
+
     public void payThePrice(String customerUsername, long orderId){
         Customer customer = findByUsername(customerUsername);
         if(customer != null){

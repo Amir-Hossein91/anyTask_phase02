@@ -1,12 +1,13 @@
 package com.example.phase_02.utility;
 
 import com.github.mfathi91.time.PersianDate;
+import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.Scanner;
-
+//@Component
 public class ApplicationContext {
     public static final Path outputPath;
     public static final Path inputPath;

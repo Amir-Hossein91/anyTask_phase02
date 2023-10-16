@@ -1,7 +1,6 @@
 package com.example.phase_02.basics.baseService.impl;
 
 import com.example.phase_02.basics.baseService.BaseService;
-import com.example.phase_02.connection.Connection;
 import com.example.phase_02.entity.base.BaseEntity;
 import com.example.phase_02.exceptions.NotFoundException;
 import com.example.phase_02.exceptions.NotSavedException;
@@ -19,13 +18,11 @@ import java.util.Set;
 @Service
 public class BaseServiceImpl<T extends BaseEntity> {
 
-    protected EntityTransaction transaction;
     protected Validator validator;
     protected Printer printer;
     protected Scanner input;
 
     public BaseServiceImpl(){
-        transaction = Connection.entityManager.getTransaction();
         validator = EntityValidator.validator;
         printer = ApplicationContext.printer;
         input = ApplicationContext.input;

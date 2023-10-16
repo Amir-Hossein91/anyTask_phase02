@@ -37,4 +37,5 @@ public class Constants {
     public static final String NO_TECHNICIAN_SELECTED = "No technician is selected yet";
     public static final String SUGGESTION_IS_NOT_THE_CHOSEN_ONE = "This suggestion is not the one tha customer has chosen";
     public static final String ORDER_CANT_START_BEFORE_SUGGESTED_TIME = "Order can not get started before the technician suggested time";
+    public static final String ORDER_NOT_STARTED = "Order status can not be set as 'finished' before it gets started";
 }

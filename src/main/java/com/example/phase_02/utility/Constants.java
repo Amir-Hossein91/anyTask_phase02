@@ -34,4 +34,7 @@ public class Constants {
     public static final String PAYING_NOT_POSSIBLE_IN_THIS_STATE = "Paying is not possible in this state of order";
     public static final String SCORING_NOT_POSSIBLE_IN_THIS_STATE = "Scoring the technician is only possible when order is 'Finished' ";
     public static final String NOT_ENOUGH_CREDIT = "Not enough credit";
+    public static final String NO_TECHNICIAN_SELECTED = "No technician is selected yet";
+    public static final String SUGGESTION_IS_NOT_THE_CHOSEN_ONE = "This suggestion is not the one tha customer has chosen";
+    public static final String ORDER_CANT_START_BEFORE_SUGGESTED_TIME = "Order can not get started before the technician suggested time";
 }

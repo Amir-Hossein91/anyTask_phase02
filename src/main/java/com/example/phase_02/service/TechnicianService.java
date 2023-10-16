@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface TechnicianService extends BaseService<Technician> {
 
+    Technician findByUsername (String technicianUsername);
+
     List<Technician> saveOrUpdate(List<Technician> technicians);
 }

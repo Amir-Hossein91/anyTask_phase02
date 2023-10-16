@@ -25,21 +25,18 @@ public class PersonServiceImple extends BaseServiceImpl<Person> implements Perso
     private final ManagerServiceImpl managerService;
     private final CustomerServiceImpl customerService;
     private final TechnicianServiceImpl technicianService;
-    private final AssistanceServiceImpl assistanceService;
     private final SubAssistanceServiceImpl subAssistanceService;
 
     public PersonServiceImple(PersonRepository repository,
                               ManagerServiceImpl managerService,
                               CustomerServiceImpl customerService,
                               TechnicianServiceImpl technicianService,
-                              AssistanceServiceImpl assistanceService,
                               SubAssistanceServiceImpl subAssistanceService) {
         super();
         this.repository = repository;
         this.managerService = managerService;
         this.customerService = customerService;
         this.technicianService = technicianService;
-        this.assistanceService = assistanceService;
         this.subAssistanceService = subAssistanceService;
     }
 
@@ -81,8 +78,6 @@ public class PersonServiceImple extends BaseServiceImpl<Person> implements Perso
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -97,8 +92,6 @@ public class PersonServiceImple extends BaseServiceImpl<Person> implements Perso
         try{
             repository.delete(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             if(e instanceof PersistenceException)
                 printer.printError("Could not delete " + repository.getClass().getSimpleName());
             else

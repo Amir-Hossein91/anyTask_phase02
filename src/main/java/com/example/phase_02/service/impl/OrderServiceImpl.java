@@ -10,6 +10,7 @@ import com.example.phase_02.service.OrderService;
 import com.example.phase_02.utility.Constants;
 import com.github.mfathi91.time.PersianDate;
 import jakarta.persistence.PersistenceException;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.DateTimeException;
@@ -23,24 +24,27 @@ import java.util.List;
 public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderService {
 
     private final OrderRepository repository;
-    private final PersonServiceImple personService;
+    private final ManagerServiceImpl managerService;
+    private final CustomerServiceImpl customerService;
     private final AssistanceServiceImpl assistanceService;
     private final SubAssistanceServiceImpl subAssistanceService;
 
     public OrderServiceImpl(OrderRepository repository,
-                            PersonServiceImple personService,
-                            AssistanceServiceImpl assistanceService,
-                            SubAssistanceServiceImpl subAssistanceService) {
+                            ManagerServiceImpl managerService,
+                            @Lazy CustomerServiceImpl customerService,
+                            @Lazy AssistanceServiceImpl assistanceService,
+                            @Lazy SubAssistanceServiceImpl subAssistanceService) {
         super();
         this.repository = repository;
-        this.personService = personService;
+        this.managerService = managerService;
+        this.customerService = customerService;
         this.assistanceService = assistanceService;
         this.subAssistanceService = subAssistanceService;
     }
 
     public List<String> showAllOrders(String managerUsername){
-        Person person = personService.findByUsername(managerUsername);
-        if(person instanceof Manager){
+        Manager manager = managerService.findByUsername(managerUsername);
+        if(manager != null){
             return findAll().stream().map(Object::toString).toList();
         }
         else{
@@ -50,8 +54,8 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
     }
 
     public void makeOrder(String customerUsername, String assistanceTitle, String subAssistanceTitle){
-        Person person = personService.findByUsername(customerUsername);
-        if( person instanceof Customer){
+        Customer customer = customerService.findByUsername(customerUsername);
+        if( customer != null){
             try{
                 Assistance assistance = assistanceService.findAssistance(assistanceTitle);
                 if(assistance == null)
@@ -63,7 +67,7 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
 
                 OrderDescription orderDescription = createOrderDescription(subAssistance);
 
-                Order order = Order.builder().subAssistance(subAssistance).customer((Customer) person)
+                Order order = Order.builder().subAssistance(subAssistance).customer(customer)
                         .orderRegistrationDateAndTime(LocalDateTime.now()).orderDescription(orderDescription)
                         .orderStatus(OrderStatus.WAITING_FOR_TECHNICIANS_SUGGESTIONS)
                         .technicianScore(1).build();
@@ -128,8 +132,8 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
+//            if(transaction.isActive())
+//                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -144,8 +148,8 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
         try{
             repository.delete(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
+//            if(transaction.isActive())
+//                transaction.rollback();
             if(e instanceof PersistenceException)
                 printer.printError("Could not delete " + repository.getClass().getSimpleName());
             else

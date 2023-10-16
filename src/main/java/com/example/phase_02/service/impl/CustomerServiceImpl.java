@@ -165,7 +165,7 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
                     throw new NotFoundException(Constants.TECHNICIAN_SUGGESTION_NOT_IN_LIST);
 
                 order.setTechnician(suggestion.getTechnician());
-                order.setOrderStatus(OrderStatus.STARTED);
+                order.setOrderStatus(OrderStatus.TECHNICIAN_IS_ON_THE_WAY);
                 order = orderService.saveOrUpdate(order);
 
                 if(order != null)

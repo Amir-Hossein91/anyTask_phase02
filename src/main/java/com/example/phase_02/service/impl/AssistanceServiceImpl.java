@@ -12,6 +12,7 @@ import com.example.phase_02.repository.AssistanceRepository;
 import com.example.phase_02.service.AssistanceService;
 import com.example.phase_02.utility.Constants;
 import jakarta.persistence.PersistenceException;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -19,14 +20,18 @@ import java.util.List;
 
 @Service
 public class AssistanceServiceImpl extends BaseServiceImpl<Assistance> implements AssistanceService {
-    private AssistanceRepository repository;
+    private final AssistanceRepository repository;
 
-    private PersonServiceImple personService;
+    private final ManagerServiceImpl managerService;
+    private final TechnicianServiceImpl technicianService;
 
-    public AssistanceServiceImpl(AssistanceRepository repository, PersonServiceImple personService) {
+    public AssistanceServiceImpl(AssistanceRepository repository,
+                                 ManagerServiceImpl managerService,
+                                 @Lazy TechnicianServiceImpl technicianService) {
         super();
         this.repository = repository;
-        this.personService = personService;
+        this.managerService = managerService;
+        this.technicianService = technicianService;
     }
 
     @Override
@@ -90,8 +95,8 @@ public class AssistanceServiceImpl extends BaseServiceImpl<Assistance> implement
     }
 
     public void addAssistance(String username, String assistanceName){
-        Person person = personService.findByUsername(username);
-        if(person instanceof Manager){
+        Manager manager = managerService.findByUsername(username);
+        if(manager != null){
             try {
                 if (findAssistance(assistanceName) != null)
                     throw new DuplicateAssistanceException(Constants.ASSISTANCE_ALREADY_EXISTS);
@@ -106,11 +111,11 @@ public class AssistanceServiceImpl extends BaseServiceImpl<Assistance> implement
     }
 
     public List<String> seeAssistances(String personUsername){
-        Person person = personService.findByUsername(personUsername);
+        Technician technician = technicianService.findByUsername(personUsername);
         try {
-            if(person == null)
+            if(technician == null)
                 throw new NotFoundException(Constants.INVALID_USERNAME);
-            if(person instanceof Technician && !((Technician) person).isActive())
+            if(technician != null && !(technician.isActive()))
                 throw new DeactivatedTechnicianException(Constants.DEACTIVATED_TECHNICIAN);
             return findAll().stream().map(Object::toString).toList();
         } catch (NotFoundException | DeactivatedTechnicianException e) {

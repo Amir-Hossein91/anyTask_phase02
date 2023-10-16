@@ -20,19 +20,19 @@ import java.util.List;
 public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements CustomerService {
 
     private final CustomerRepository repository;
-    private final PersonServiceImple personService;
+    private final ManagerServiceImpl managerService;
     private final OrderServiceImpl orderService;
     private final TechnicianSuggestionServiceImpl technicianSuggestionService;
 
     public CustomerServiceImpl(CustomerRepository repository,
-                               PersonServiceImple personService,
                                OrderServiceImpl orderService,
+                               ManagerServiceImpl managerService,
                                TechnicianSuggestionServiceImpl technicianSuggestionService) {
         super();
         this.repository = repository;
-        this.personService = personService;
         this.orderService = orderService;
         this.technicianSuggestionService = technicianSuggestionService;
+        this.managerService = managerService;
     }
 
     public Customer specifyCustomer(){
@@ -55,8 +55,8 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
     }
 
     public List<String> showAllCustomers(String managerUsername){
-        Person person = personService.findByUsername(managerUsername);
-        if(person instanceof Manager){
+        Manager manager = managerService.findByUsername(managerUsername);
+        if(manager != null){
             return findAll().stream().map(Object::toString).toList();
         }
         else{
@@ -66,8 +66,8 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
     }
 
     public List<String> seeOrdersOf (String customerUsername){
-        Person person = personService.findByUsername(customerUsername);
-        if(person instanceof Customer customer){
+        Customer customer = findByUsername(customerUsername);
+        if(customer != null){
             return orderService.findByCustomer(customer).stream().map(Object::toString).toList();
         }
         else {
@@ -96,10 +96,10 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
     }
 
     public List<String> seeTechnicianSuggestions(String customerUsername, long orderId){
-        Person person = personService.findByUsername(customerUsername);
-        if(person instanceof Customer){
+        Customer customer = findByUsername(customerUsername);
+        if(customer != null){
             Order order = orderService.findById(orderId);
-            if(!isSuggestionChoosingPossible(person,order))
+            if(!isSuggestionChoosingPossible(customer,order))
                 return List.of();
 
             List<TechnicianSuggestionDTO> technicianSuggestions = technicianSuggestionService.getSuggestionsOf(order);
@@ -119,10 +119,10 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
     }
 
     public void chooseSuggestion(String customerUsername, long orderId, long suggestionId){
-        Person person = personService.findByUsername(customerUsername);
-        if(person instanceof Customer){
+        Customer customer = findByUsername(customerUsername);
+        if(customer != null){
             Order order = orderService.findById(orderId);
-            if(!isSuggestionChoosingPossible(person,order))
+            if(!isSuggestionChoosingPossible(customer,order))
                 return;
 
             List<TechnicianSuggestionDTO> technicianSuggestions = technicianSuggestionService.getSuggestionsOf(order);
@@ -156,8 +156,8 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
     }
 
     public void payThePrice(String customerUsername, long orderId){
-        Person person = personService.findByUsername(customerUsername);
-        if(person instanceof Customer customer){
+        Customer customer = findByUsername(customerUsername);
+        if(customer != null){
             try{
                 Order order = orderService.findById(orderId);
                 if(order == null)
@@ -200,8 +200,8 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
     }
 
     public void scoreTheTechnician(String customerUsername, long orderId){
-        Person person = personService.findByUsername(customerUsername);
-        if(person instanceof Customer customer){
+        Customer customer = findByUsername(customerUsername);
+        if(customer != null){
             try{
                 Order order = orderService.findById(orderId);
                 if(order == null)
@@ -244,8 +244,8 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
+//            if(transaction.isActive())
+//                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -260,8 +260,6 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
         try{
             repository.delete(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             if(e instanceof PersistenceException)
                 printer.printError("Could not delete " + repository.getClass().getSimpleName());
             else
@@ -289,5 +287,10 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
             printer.printError(e.getMessage());
             return null;
         }
+    }
+
+    @Override
+    public Customer findByUsername(String customerUsername) {
+        return repository.findByUsername(customerUsername).orElse(null);
     }
 }

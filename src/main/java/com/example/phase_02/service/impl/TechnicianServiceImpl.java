@@ -21,19 +21,18 @@ import java.util.List;
 public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implements TechnicianService {
 
     private final TechnicianRepository repository;
-    private final PersonServiceImple personService;
+    private final ManagerServiceImpl managerService;
     private final SubAssistanceServiceImpl subAssistanceService;
     private final AssistanceServiceImpl assistanceService;
     private final OrderServiceImpl orderService;
 
     public TechnicianServiceImpl(TechnicianRepository repository,
-                                 PersonServiceImple personService,
-                                 SubAssistanceServiceImpl subAssistanceService,
+                                 ManagerServiceImpl managerService, SubAssistanceServiceImpl subAssistanceService,
                                  AssistanceServiceImpl assistanceService,
                                  OrderServiceImpl orderService) {
         super();
         this.repository = repository;
-        this.personService = personService;
+        this.managerService = managerService;
         this.subAssistanceService = subAssistanceService;
         this.assistanceService = assistanceService;
         this.orderService = orderService;
@@ -90,10 +89,10 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
 
     public void addTechnicianToSubAssistance(String managerName, String technicianName,
                                              String subassistanceTitle,String assistanceTitle){
-        Person manager = personService.findByUsername(managerName);
-        if(manager instanceof Manager){
+        Manager manager = managerService.findByUsername(managerName);
+        if(manager != null){
             try{
-                Person technician = personService.findByUsername(technicianName);
+                Technician technician = findByUsername(technicianName);
                 Assistance assistance = assistanceService.findAssistance(assistanceTitle);
 
                 if(assistance == null)
@@ -101,7 +100,7 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
 
                 SubAssistance subAssistance = subAssistanceService.findSubAssistance(subassistanceTitle,assistance);
 
-                if(!(technician instanceof Technician) || subAssistance == null)
+                if(technician == null || subAssistance == null)
                     throw new NotFoundException(Constants.TECHNICIAN_OR_SUBASSISTANCE_NOT_FOUND);
 
                 if(!((Technician) technician).isActive() && ((Technician) technician).getTechnicianStatus()==TechnicianStatus.APPROVED)
@@ -126,10 +125,10 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
 
     public void removeTechnicianFromSubAssistance(String managerName, String technicianName,
                                              String subassistanceTitle,String assistanceTitle){
-        Person manager = personService.findByUsername(managerName);
-        if(manager instanceof Manager){
+        Manager manager = managerService.findByUsername(managerName);
+        if(manager != null){
             try{
-                Person technician = personService.findByUsername(technicianName);
+                Technician technician = findByUsername(technicianName);
                 Assistance assistance = assistanceService.findAssistance(assistanceTitle);
 
                 if(assistance == null)
@@ -137,7 +136,7 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
 
                 SubAssistance subAssistance = subAssistanceService.findSubAssistance(subassistanceTitle,assistance);
 
-                if(!(technician instanceof Technician) || subAssistance == null)
+                if(technician == null || subAssistance == null)
                     throw new NotFoundException(Constants.TECHNICIAN_OR_SUBASSISTANCE_NOT_FOUND);
 
                 List<Technician> technicians = subAssistance.getTechnicians();
@@ -162,8 +161,6 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -178,8 +175,6 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
         try{
             repository.delete(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             if(e instanceof PersistenceException)
                 printer.printError("Could not delete " + repository.getClass().getSimpleName());
             else
@@ -210,6 +205,11 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
     }
 
     @Override
+    public Technician findByUsername(String technicianUsername) {
+        return repository.findByUsername(technicianUsername).orElse(null);
+    }
+
+    @Override
     public List<Technician> saveOrUpdate(List<Technician> technicians) {
         try{
             for(Technician t: technicians) {
@@ -217,12 +217,10 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
                     return null;
             }
             technicians = repository.saveAll(technicians);
-            if(technicians != null)
+            if(!technicians.isEmpty())
                 printer.printMessage("Technician list saved successfully!");
             return technicians;
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -231,8 +229,8 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
     }
 
     public List<String> showAllTechnicians(String managerUsername){
-        Person person = personService.findByUsername(managerUsername);
-        if(person instanceof Manager){
+        Manager manager = managerService.findByUsername(managerUsername);
+        if(manager != null){
             return findAll().stream().map(Object::toString).toList();
         }
         else{
@@ -243,8 +241,8 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
 
     public List<String> seeUnapprovedTechnicians(String managerUsername){
 
-        Person manager = personService.findByUsername(managerUsername);
-        if(manager instanceof Manager){
+        Manager manager = managerService.findByUsername(managerUsername);
+        if(manager == null){
             try{
                 List<Technician> technicians = repository.findUnapproved().orElse(null);
                 if(technicians == null || technicians.isEmpty())
@@ -274,8 +272,8 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
 
     public List<String> seeDeactivatedTechnicians(String managerUsername){
 
-        Person manager = personService.findByUsername(managerUsername);
-        if(manager instanceof Manager){
+        Manager manager = managerService.findByUsername(managerUsername);
+        if(manager != null){
             try{
                 List<Technician> technicians = repository.findDeactivated().orElse(null);
                 if(technicians == null || technicians.isEmpty())
@@ -294,13 +292,13 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
     }
 
     public List<String> findRelativeOrders(String technicianUsername){
-        Person person = personService.findByUsername(technicianUsername);
-        if(person instanceof Technician){
+        Technician technician = findByUsername(technicianUsername);
+        if(technician != null){
             try{
-                if(!((Technician) person).isActive())
+                if(!technician.isActive())
                     throw new DeactivatedTechnicianException(Constants.DEACTIVATED_TECHNICIAN);
 
-               return orderService.findRelatedOrders((Technician) person).stream().map(Object::toString).toList();
+               return orderService.findRelatedOrders(technician).stream().map(Object::toString).toList();
             } catch (DeactivatedTechnicianException e) {
                 printer.printError(e.getMessage());
                 return List.of();
@@ -313,17 +311,17 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
     }
 
     public void sendTechnicianSuggestion (String technicianUsername, long orderId){
-        Person person = personService.findByUsername(technicianUsername);
-        if(person instanceof Technician){
+        Technician technician = findByUsername(technicianUsername);
+        if(technician != null){
             try{
-                if(!((Technician) person).isActive())
+                if(!technician.isActive())
                     throw new DeactivatedTechnicianException(Constants.DEACTIVATED_TECHNICIAN);
 
                 Order order = orderService.findById(orderId);
                 if(order == null)
                     throw new NotFoundException(Constants.NO_SUCH_ORDER);
 
-                orderService.sendTechnicianSuggestion((Technician) person,order);
+                orderService.sendTechnicianSuggestion(technician,order);
 
             } catch (DeactivatedTechnicianException | NotFoundException e) {
                 printer.printError(e.getMessage());

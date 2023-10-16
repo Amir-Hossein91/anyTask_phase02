@@ -14,7 +14,7 @@ import java.util.List;
 @Service
 public class OrderDescriptionServiceImpl extends BaseServiceImpl<OrderDescription> implements OrderDescriptionService {
 
-    private OrderDescriptionRepository repository;
+    private final OrderDescriptionRepository repository;
 
     public OrderDescriptionServiceImpl(OrderDescriptionRepository repository) {
         super();
@@ -28,8 +28,6 @@ public class OrderDescriptionServiceImpl extends BaseServiceImpl<OrderDescriptio
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -44,8 +42,6 @@ public class OrderDescriptionServiceImpl extends BaseServiceImpl<OrderDescriptio
         try{
             repository.delete(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             if(e instanceof PersistenceException)
                 printer.printError("Could not delete " + repository.getClass().getSimpleName());
             else

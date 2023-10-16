@@ -47,8 +47,6 @@ public class ManagerServiceImpl extends BaseServiceImpl<Manager> implements Mana
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -63,8 +61,6 @@ public class ManagerServiceImpl extends BaseServiceImpl<Manager> implements Mana
         try{
             repository.delete(t);
         } catch (RuntimeException e){
-            if(transaction.isActive())
-                transaction.rollback();
             if(e instanceof PersistenceException)
                 printer.printError("Could not delete " + repository.getClass().getSimpleName());
             else
@@ -96,5 +92,10 @@ public class ManagerServiceImpl extends BaseServiceImpl<Manager> implements Mana
 
     public boolean doesManagerExist(){
         return !repository.findAll().isEmpty();
+    }
+
+    @Override
+    public Manager findByUsername(String managerUsername) {
+        return repository.findByUsername(managerUsername).orElse(null);
     }
 }

@@ -22,7 +22,7 @@ public class ApplicationContext {
     static{
         sourceAddress = "image_input";
         imageName = "technician_01";
-        imageExtension = "js";
+        imageExtension = "jpg";
         inputPath = Paths.get(sourceAddress,imageName+"."+imageExtension);
         outputPath = Paths.get("image_output/" + imageName + ".jpg");
         currentPersianDate = PersianDate.now();

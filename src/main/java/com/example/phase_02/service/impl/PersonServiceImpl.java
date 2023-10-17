@@ -1,6 +1,7 @@
 package com.example.phase_02.service.impl;
 
 import com.example.phase_02.basics.baseService.impl.BaseServiceImpl;
+import com.example.phase_02.entity.Customer;
 import com.example.phase_02.repository.PersonRepository;
 import com.example.phase_02.utility.ApplicationContext;
 import com.example.phase_02.utility.Constants;
@@ -14,7 +15,6 @@ import jakarta.persistence.PersistenceException;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -27,6 +27,8 @@ public class PersonServiceImpl extends BaseServiceImpl<Person> implements Person
     private final TechnicianServiceImpl technicianService;
     private final SubAssistanceServiceImpl subAssistanceService;
 
+    public static boolean isLoggedIn;
+
     public PersonServiceImpl(PersonRepository repository,
                              ManagerServiceImpl managerService,
                              CustomerServiceImpl customerService,
@@ -38,22 +40,6 @@ public class PersonServiceImpl extends BaseServiceImpl<Person> implements Person
         this.customerService = customerService;
         this.technicianService = technicianService;
         this.subAssistanceService = subAssistanceService;
-    }
-
-    public Person specifyPerson(){
-        printer.getInput("first name");
-        String firstname = input.nextLine();
-        printer.getInput("last name");
-        String lastname = input.nextLine();
-        printer.getInput("email");
-        String email = input.nextLine();
-        printer.getInput("user name");
-        String username = input.nextLine();
-        printer.getInput("password");
-        String password = input.nextLine();
-        LocalDateTime registrationDate = LocalDateTime.now();
-        return Person.builder().firstName(firstname).lastName(lastname).email(email).username(username)
-                .password(password).registrationDate(registrationDate).build();
     }
 
     public void changePassword(String username, String oldPassword, String newPassword){
@@ -131,26 +117,23 @@ public class PersonServiceImpl extends BaseServiceImpl<Person> implements Person
         }
     }
 
-
-    public Person registerCustomer(){
-        return customerService.saveOrUpdate(customerService.specifyCustomer());
+    public Person registerCustomer(Customer person){
+        return customerService.saveOrUpdate(person);
     }
 
-    public Person registerTechnician(){
-        Path inputPath = ApplicationContext.inputPath;
+    public Person registerTechnician(Technician technician){
+        Path inputPath = Path.of(ApplicationContext.inputPath.toString());
         Path outputPath = ApplicationContext.outputPath;
         if(!technicianService.validateImage(inputPath))
             return null;
-        Technician technician = technicianService.specifyTechnician(inputPath);
         if(technician == null)
             return null;
         Technician savedTechnician = technicianService.saveOrUpdate(technician);
         technicianService.saveImageToDirectory(outputPath,savedTechnician.getImage());
         return savedTechnician;
     }
-    public Person registerManager(){
-        Manager manager = managerService.specifyManager();
-        if(manager == null){
+    public Person registerManager(Manager manager){
+        if(managerService.doesManagerExist()){
             printer.printError("This organization already has a defined manager");
             return null;
         }
@@ -158,20 +141,17 @@ public class PersonServiceImpl extends BaseServiceImpl<Person> implements Person
     }
 
     public void login(String username, String password){
+        isLoggedIn = false;
         Person fetched = findByUsername(username);
         if(fetched != null){
             try {
                 if (!fetched.getPassword().equals(password))
                     throw new IllegalArgumentException(Constants.INCORRECT_USERNAME_PASSWORD);
+                isLoggedIn = true;
                 printer.printMessage("Hello " + fetched.getFirstName() + ", you are a " + fetched.getClass().getSimpleName() + " here!");
             } catch (IllegalArgumentException e) {
                 printer.printError(e.getMessage());
             }
         }
     }
-
-
-
-
-
 }

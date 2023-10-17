@@ -28,18 +28,20 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
     private final CustomerServiceImpl customerService;
     private final AssistanceServiceImpl assistanceService;
     private final SubAssistanceServiceImpl subAssistanceService;
+    private final OrderDescriptionServiceImpl orderDescriptionService;
 
     public OrderServiceImpl(OrderRepository repository,
                             ManagerServiceImpl managerService,
                             @Lazy CustomerServiceImpl customerService,
                             @Lazy AssistanceServiceImpl assistanceService,
-                            @Lazy SubAssistanceServiceImpl subAssistanceService) {
+                            @Lazy SubAssistanceServiceImpl subAssistanceService, OrderDescriptionServiceImpl orderDescriptionService) {
         super();
         this.repository = repository;
         this.managerService = managerService;
         this.customerService = customerService;
         this.assistanceService = assistanceService;
         this.subAssistanceService = subAssistanceService;
+        this.orderDescriptionService = orderDescriptionService;
     }
 
     public List<String> showAllOrders(String managerUsername){
@@ -53,7 +55,7 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
         }
     }
 
-    public void makeOrder(String customerUsername, String assistanceTitle, String subAssistanceTitle){
+    public void makeOrder(String customerUsername, String assistanceTitle, String subAssistanceTitle, OrderDescription orderDescription){
         Customer customer = customerService.findByUsername(customerUsername);
         if( customer != null){
             try{
@@ -65,12 +67,11 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
                 if(subAssistance == null)
                     throw new NotFoundException(Constants.NO_SUCH_SUBASSISTANCE);
 
-                OrderDescription orderDescription = createOrderDescription(subAssistance);
-
                 Order order = Order.builder().subAssistance(subAssistance).customer(customer)
                         .orderRegistrationDateAndTime(LocalDateTime.now()).orderDescription(orderDescription)
                         .orderStatus(OrderStatus.WAITING_FOR_TECHNICIANS_SUGGESTIONS)
                         .technicianScore(1).build();
+
                 order = saveOrUpdate(order);
                 if(order != null)
                     printer.printMessage("Order saved successfully with id of: " + order.getId());
@@ -82,49 +83,6 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
             printer.printError("Only a customer can make an order");
     }
 
-    private OrderDescription createOrderDescription(SubAssistance subAssistance){
-        long basePrice = subAssistance.getBasePrice();
-        OrderDescription orderDescription = null;
-        while(orderDescription == null){
-            try{
-                printer.getInput("Suggested price");
-                long suggestedPrice = input.nextLong();
-                input.nextLine();
-                if(suggestedPrice < basePrice)
-                    throw new IllegalArgumentException(Constants.INVALID_SUGGESTED_PRICE);
-                printer.getInput("Desired year");
-                int year = input.nextInt();
-                input.nextLine();
-                printer.getInput("Desired month");
-                int month = input.nextInt();
-                input.nextLine();
-                printer.getInput("Desired day");
-                int day = input.nextInt();
-                input.nextLine();
-                printer.getInput("Desired hour");
-                int hour = input.nextInt();
-                input.nextLine();
-                printer.getInput("Desired minute");
-                int minute = input.nextInt();
-                input.nextLine();
-                PersianDate persionDate = PersianDate.of(year,month,day);
-                LocalDate gregorianDate = persionDate.toGregorian();
-                LocalDateTime dateTime = gregorianDate.atTime(hour,minute);
-                if(dateTime.isBefore(LocalDateTime.now()))
-                    throw new DateTimeException(Constants.DATE_BEFORE_NOW);
-                printer.getInput("Task details");
-                String details = input.nextLine();
-                printer.getInput("Address");
-                String address = input.nextLine();
-                orderDescription = OrderDescription.builder().customerSuggestedPrice(suggestedPrice)
-                        .customerDesiredDateAndTime(dateTime).taskDetails(details).address(address).build();
-            } catch (DateTimeException | IllegalArgumentException e){
-                printer.printError(e.getMessage());
-            }
-        }
-        return orderDescription;
-    }
-
     @Override
     public Order saveOrUpdate(Order t) {
         if(!isValid(t))
@@ -132,8 +90,6 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-//            if(transaction.isActive())
-//                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();
@@ -148,8 +104,6 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
         try{
             repository.delete(t);
         } catch (RuntimeException e){
-//            if(transaction.isActive())
-//                transaction.rollback();
             if(e instanceof PersistenceException)
                 printer.printError("Could not delete " + repository.getClass().getSimpleName());
             else
@@ -208,14 +162,14 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
     }
 
     @Override
-    public void sendTechnicianSuggestion(Technician technician, Order order) {
+    public void sendTechnicianSuggestion(Technician technician, Order order, TechnicianSuggestion technicianSuggestion) {
         try{
             List<Order> orders = repository.findRelatedOrders(technician).orElseThrow(
                     () -> new NotFoundException(Constants.NO_RELATED_ORDERS)
             );
             if(!orders.contains(order))
                 throw new NotFoundException(Constants.ORDER_IS_NOT_RELATED);
-            TechnicianSuggestion technicianSuggestion = createTechnicianSuggestion(technician,order);
+
             if(technicianSuggestion != null){
                 order.getTechnicianSuggestions().add(technicianSuggestion);
                 saveOrUpdate(order);
@@ -239,43 +193,4 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
         }
     }
 
-    private TechnicianSuggestion createTechnicianSuggestion(Technician technician,Order order){
-        LocalDateTime customerDesiredDate = order.getOrderDescription().getCustomerDesiredDateAndTime();
-        long basePrice = order.getSubAssistance().getBasePrice();
-        TechnicianSuggestion technicianSuggestion = null;
-        while (technicianSuggestion == null){
-            try{
-                printer.getInput("Suggested price");
-                long suggestedPrice = input.nextLong();
-                if(suggestedPrice < basePrice)
-                    throw new IllegalArgumentException(Constants.INVALID_SUGGESTED_PRICE);
-                printer.getInput("Suggested year");
-                int year = input.nextInt();
-                printer.getInput("Suggested month");
-                int month = input.nextInt();
-                printer.getInput("Suggested day");
-                int day = input.nextInt();
-                printer.getInput("Suggested hour");
-                int hour = input.nextInt();
-                printer.getInput("Suggested minute");
-                int minute = input.nextInt();
-                PersianDate persionDate = PersianDate.of(year,month,day);
-                LocalDate gregorianDate = persionDate.toGregorian();
-                LocalDateTime dateTime = gregorianDate.atTime(hour,minute);
-                if(dateTime.isBefore(customerDesiredDate))
-                    throw new DateTimeException(Constants.DATE_BEFORE_CUSTOMER_DESIRED);
-                printer.getInput("Estimated task duration (hours)");
-                int taskDuration = input.nextInt();
-                input.nextLine();
-
-                technicianSuggestion = TechnicianSuggestion.builder().order(order)
-                        .DateAndTimeOfTechSuggestion(LocalDateTime.now()).techSuggestedPrice(suggestedPrice)
-                        .techSuggestedDate(dateTime).taskEstimatedDuration(taskDuration).technician(technician).build();
-
-            } catch (DateTimeException | IllegalArgumentException e){
-                printer.printError(e.getMessage());
-            }
-        }
-        return technicianSuggestion;
-    }
 }

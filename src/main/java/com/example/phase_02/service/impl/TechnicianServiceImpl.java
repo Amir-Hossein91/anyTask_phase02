@@ -310,7 +310,7 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
         }
     }
 
-    public void sendTechnicianSuggestion (String technicianUsername, long orderId){
+    public void sendTechnicianSuggestion (String technicianUsername, long orderId, TechnicianSuggestion technicianSuggestion){
         Technician technician = findByUsername(technicianUsername);
         if(technician != null){
             try{
@@ -321,7 +321,7 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
                 if(order == null)
                     throw new NotFoundException(Constants.NO_SUCH_ORDER);
 
-                orderService.sendTechnicianSuggestion(technician,order);
+                orderService.sendTechnicianSuggestion(technician,order,technicianSuggestion);
 
             } catch (DeactivatedTechnicianException | NotFoundException e) {
                 printer.printError(e.getMessage());

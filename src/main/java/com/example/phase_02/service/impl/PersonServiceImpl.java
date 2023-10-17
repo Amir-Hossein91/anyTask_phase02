@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class PersonServiceImple extends BaseServiceImpl<Person> implements PersonService {
+public class PersonServiceImpl extends BaseServiceImpl<Person> implements PersonService {
 
     private final PersonRepository repository;
     private final ManagerServiceImpl managerService;
@@ -27,11 +27,11 @@ public class PersonServiceImple extends BaseServiceImpl<Person> implements Perso
     private final TechnicianServiceImpl technicianService;
     private final SubAssistanceServiceImpl subAssistanceService;
 
-    public PersonServiceImple(PersonRepository repository,
-                              ManagerServiceImpl managerService,
-                              CustomerServiceImpl customerService,
-                              TechnicianServiceImpl technicianService,
-                              SubAssistanceServiceImpl subAssistanceService) {
+    public PersonServiceImpl(PersonRepository repository,
+                             ManagerServiceImpl managerService,
+                             CustomerServiceImpl customerService,
+                             TechnicianServiceImpl technicianService,
+                             SubAssistanceServiceImpl subAssistanceService) {
         super();
         this.repository = repository;
         this.managerService = managerService;
@@ -131,39 +131,30 @@ public class PersonServiceImple extends BaseServiceImpl<Person> implements Perso
         }
     }
 
-    public Person register(){
-        System.out.println("Rolls:");
-        printer.printListWithSelect(List.of("Manager", "Technician", "Customer"));
-        int choice = input.nextInt();
-        input.nextLine();
-        switch (choice){
-            case 1 -> {
-                Manager manager = managerService.specifyManager();
-                if(manager == null){
-                    printer.printError("This organization already has a defined manager");
-                    return null;
-                }
-                return managerService.saveOrUpdate(manager);
-            }
-            case 2 -> {
-                Path inputPath = ApplicationContext.inputPath;
-                Path outputPath = ApplicationContext.outputPath;
-                if(!technicianService.validateImage(inputPath))
-                    return null;
-                Technician technician = technicianService.specifyTechnician(inputPath);
-                if(technician == null)
-                    return null;
-                Technician savedTechnician = technicianService.saveOrUpdate(technician);
-                technicianService.saveImageToDirectory(outputPath,savedTechnician.getImage());
-                return savedTechnician;
-            }
-            case 3 -> {
-                return customerService.saveOrUpdate(customerService.specifyCustomer());
-            }
-            default -> {
-                return saveOrUpdate(specifyPerson());
-            }
+
+    public Person registerCustomer(){
+        return customerService.saveOrUpdate(customerService.specifyCustomer());
+    }
+
+    public Person registerTechnician(){
+        Path inputPath = ApplicationContext.inputPath;
+        Path outputPath = ApplicationContext.outputPath;
+        if(!technicianService.validateImage(inputPath))
+            return null;
+        Technician technician = technicianService.specifyTechnician(inputPath);
+        if(technician == null)
+            return null;
+        Technician savedTechnician = technicianService.saveOrUpdate(technician);
+        technicianService.saveImageToDirectory(outputPath,savedTechnician.getImage());
+        return savedTechnician;
+    }
+    public Person registerManager(){
+        Manager manager = managerService.specifyManager();
+        if(manager == null){
+            printer.printError("This organization already has a defined manager");
+            return null;
         }
+        return managerService.saveOrUpdate(manager);
     }
 
     public void login(String username, String password){

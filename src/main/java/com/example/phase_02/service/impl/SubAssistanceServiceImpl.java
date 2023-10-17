@@ -20,12 +20,12 @@ public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> imp
 
     private final SubAssistanceRepository repository;
     private final ManagerServiceImpl managerService;
-    private final PersonServiceImple personService;
+    private final PersonServiceImpl personService;
     private final AssistanceServiceImpl assistanceService;
 
     public SubAssistanceServiceImpl(SubAssistanceRepository repository,
                                     ManagerServiceImpl managerService,
-                                    @Lazy PersonServiceImple personService,
+                                    @Lazy PersonServiceImpl personService,
                                     AssistanceServiceImpl assistanceService) {
         super();
         this.repository = repository;
@@ -41,8 +41,6 @@ public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> imp
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-//            if(transaction.isActive())
-//                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();

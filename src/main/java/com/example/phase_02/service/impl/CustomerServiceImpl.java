@@ -35,25 +35,6 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
         this.managerService = managerService;
     }
 
-    public Customer specifyCustomer(){
-        printer.getInput("first name");
-        String firstname = input.nextLine();
-        printer.getInput("last name");
-        String lastname = input.nextLine();
-        printer.getInput("email");
-        String email = input.nextLine();
-        printer.getInput("user name");
-        String username = input.nextLine();
-        printer.getInput("password");
-        String password = input.nextLine();
-        LocalDateTime registrationDate = LocalDateTime.now();
-        printer.getInput("initial credit");
-        long credit = input.nextLong();
-        input.nextLine();
-        return Customer.builder().firstName(firstname).lastName(lastname).email(email).username(username)
-                .password(password).registrationDate(registrationDate).credit(credit).build();
-    }
-
     public List<String> showAllCustomers(String managerUsername){
         Manager manager = managerService.findByUsername(managerUsername);
         if(manager != null){
@@ -356,8 +337,6 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
         try{
             return repository.save(t);
         } catch (RuntimeException e){
-//            if(transaction.isActive())
-//                transaction.rollback();
             printer.printError(e.getMessage());
             printer.printError(Arrays.toString(e.getStackTrace()));
             input.nextLine();

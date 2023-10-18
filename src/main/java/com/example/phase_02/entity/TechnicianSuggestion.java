@@ -17,8 +17,9 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
+
 public class TechnicianSuggestion extends BaseEntity {
-    @OneToOne
+    @ManyToOne
     private Technician technician;
     @ManyToOne
     private Order order;

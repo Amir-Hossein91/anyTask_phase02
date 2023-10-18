@@ -81,7 +81,7 @@ class PersonServiceImplTest {
                 .firstName("omid")
                 .lastName("omidi")
                 .email("omid"+counter+"@gmail.com")
-                .image(Files.readAllBytes(Path.of("C:\\Users\\AmirHossein\\IdeaProjects\\anyTask\\image_input\\technician_01.jpg")))
+//                .image(Files.readAllBytes(Path.of("C:\\Users\\AmirHossein\\IdeaProjects\\anyTask\\image_input\\technician_01.jpg")))
                 .credit(0)
                 .score(0)
                 .username("omid" + counter)
@@ -139,7 +139,7 @@ class PersonServiceImplTest {
 
     @Test
     @Order(7)
-    public void technicianCanRegisterInApp(){
+    public void technicianCanRegisterInApp() throws IOException {
         personService.registerTechnician(technician);
         Assertions.assertFalse(technician.getId()==0);
     }

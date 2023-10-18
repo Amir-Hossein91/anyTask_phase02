@@ -14,6 +14,8 @@ import com.example.phase_02.service.PersonService;
 import jakarta.persistence.PersistenceException;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -121,7 +123,7 @@ public class PersonServiceImpl extends BaseServiceImpl<Person> implements Person
         return customerService.saveOrUpdate(person);
     }
 
-    public Person registerTechnician(Technician technician){
+    public Person registerTechnician(Technician technician) throws IOException {
         Path inputPath = Path.of(ApplicationContext.inputPath.toString());
         Path outputPath = ApplicationContext.outputPath;
         if(!technicianService.validateImage(inputPath))
@@ -129,7 +131,7 @@ public class PersonServiceImpl extends BaseServiceImpl<Person> implements Person
         if(technician == null)
             return null;
         Technician savedTechnician = technicianService.saveOrUpdate(technician);
-        technicianService.saveImageToDirectory(outputPath,savedTechnician.getImage());
+        technicianService.saveImageToDirectory(outputPath, Files.readAllBytes(inputPath));
         return savedTechnician;
     }
     public Person registerManager(Manager manager){

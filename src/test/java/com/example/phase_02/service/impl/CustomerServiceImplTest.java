@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +51,7 @@ class CustomerServiceImplTest {
     private TechnicianSuggestion secondTechnicianSuggestion;
 
     @BeforeEach
-    public void makeEntities() throws IOException {
+    public void makeEntities(){
         counter++;
         orderDescription = OrderDescription.builder()
                 .customerSuggestedPrice(110000)

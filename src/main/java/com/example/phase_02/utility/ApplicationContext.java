@@ -24,7 +24,7 @@ public class ApplicationContext {
         imageName = "technician_01";
         imageExtension = "jpg";
         inputPath = Path.of("C:\\Users\\AmirHossein\\IdeaProjects\\anyTask\\image_input\\technician_01.jpg");
-        outputPath = Paths.get("image_output/" + imageName + ".jpg");
+        outputPath = Path.of("C:\\Users\\AmirHossein\\IdeaProjects\\anyTask\\image_output\\technician_01.jpg");
         currentPersianDate = PersianDate.now();
         currentDate = currentPersianDate.toGregorian();
         printer = new Printer();

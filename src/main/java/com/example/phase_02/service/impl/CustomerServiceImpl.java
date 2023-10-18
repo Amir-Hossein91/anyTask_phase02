@@ -76,7 +76,7 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
         return true;
     }
 
-    public List<String> seeTechnicianSuggestionsOrderedByPrice(String customerUsername, long orderId){
+    public List<TechnicianSuggestionDTO> seeTechnicianSuggestionsOrderedByPrice(String customerUsername, long orderId){
         Customer customer = findByUsername(customerUsername);
         if(customer != null){
             Order order = orderService.findById(orderId);
@@ -91,7 +91,7 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
                 order.setOrderStatus(OrderStatus.CHOOSING_TECHNICIAN);
                 orderService.saveOrUpdate(order);
             }
-            return technicianSuggestions.stream().map(Object::toString).toList();
+            return technicianSuggestions;
         }
         else {
             printer.printError("Only customers have access to this function");
@@ -99,7 +99,7 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
         }
     }
 
-    public List<String> seeTechnicianSuggestionsOrderedByScore(String customerUsername, long orderId){
+    public List<TechnicianSuggestionDTO> seeTechnicianSuggestionsOrderedByScore(String customerUsername, long orderId){
         Customer customer = findByUsername(customerUsername);
         if(customer != null){
             Order order = orderService.findById(orderId);
@@ -114,7 +114,7 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
                 order.setOrderStatus(OrderStatus.CHOOSING_TECHNICIAN);
                 orderService.saveOrUpdate(order);
             }
-            return technicianSuggestions.stream().map(Object::toString).toList();
+            return technicianSuggestions;
         }
         else {
             printer.printError("Only customers have access to this function");
@@ -292,7 +292,7 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
             printer.printError("Paying the price is an act of 'customer'");
     }
 
-    public void scoreTheTechnician(String customerUsername, long orderId){
+    public void scoreTheTechnician(String customerUsername, long orderId, int score, String opinion){
         Customer customer = findByUsername(customerUsername);
         if(customer != null){
             try{
@@ -307,12 +307,6 @@ public class CustomerServiceImpl extends BaseServiceImpl<Customer> implements Cu
                     throw new IllegalStateException(Constants.SCORING_NOT_POSSIBLE_IN_THIS_STATE);
 
                 Technician selectedTechnician = order.getTechnician();
-
-                printer.getInput("Technician score (1-5)");
-                int score = input.nextInt();
-                input.nextLine();
-                printer.getInput("Your opinion");
-                String opinion = input.nextLine();
 
                 selectedTechnician.setScore(selectedTechnician.getScore() + score);
                 order.setTechnicianScore(score);

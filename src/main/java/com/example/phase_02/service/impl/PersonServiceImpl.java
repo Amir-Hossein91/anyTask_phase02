@@ -123,13 +123,14 @@ public class PersonServiceImpl extends BaseServiceImpl<Person> implements Person
         return customerService.saveOrUpdate(person);
     }
 
-    public Person registerTechnician(Technician technician) throws IOException {
-        Path inputPath = Path.of(ApplicationContext.inputPath.toString());
-        Path outputPath = ApplicationContext.outputPath;
+    public Person registerTechnician(Technician technician,Path inputPath,Path outputPath ) throws IOException {
+
         if(!technicianService.validateImage(inputPath))
             return null;
+        byte[] image = Files.readAllBytes(inputPath);
         if(technician == null)
             return null;
+        technician.setImage(image);
         Technician savedTechnician = technicianService.saveOrUpdate(technician);
         technicianService.saveImageToDirectory(outputPath, Files.readAllBytes(inputPath));
         return savedTechnician;

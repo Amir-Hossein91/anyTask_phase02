@@ -6,15 +6,12 @@ import com.example.phase_02.entity.dto.OrderDTO;
 import com.example.phase_02.entity.enums.OrderStatus;
 import com.example.phase_02.entity.enums.TechnicianStatus;
 import com.example.phase_02.service.OrderDescriptionService;
-import com.example.phase_02.utility.ApplicationContext;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +21,7 @@ import java.util.List;
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation.class)
 class OrderServiceImplTest {
 
-    private static int counter =0;
+    public static int counter;
 
     @Autowired
     OrderDescriptionService orderDescriptionService;
@@ -40,49 +37,53 @@ class OrderServiceImplTest {
     ManagerServiceImpl managerService;
     @Autowired
     TechnicianServiceImpl technicianService;
+    @Autowired
+    TechnicianSuggestionServiceImpl technicianSuggestionService;
+    @Autowired
+    PersonServiceImpl personService;
 
     private OrderDescription orderDescription;
     private Customer customer;
     private Manager manager;
     private Assistance assistance;
     private SubAssistance subAssistance;
-    private Order order;
+    private com.example.phase_02.entity.Order order;
     private Technician technician;
     private TechnicianSuggestion technicianSuggestion;
 
     @BeforeEach
-    public void makeEntities() throws IOException {
-        counter ++;
+    public void makeEntities() {
+        counter++;
         orderDescription = OrderDescription.builder()
                 .customerSuggestedPrice(110000)
                 .address("Tehran")
                 .taskDetails("Cleaning house")
-                .customerDesiredDateAndTime(LocalDateTime.of(2023,10,17,15,30))
+                .customerDesiredDateAndTime(LocalDateTime.of(2023, 10, 17, 15, 30))
                 .build();
         customer = Customer.builder()
                 .firstName("ali")
                 .lastName("mohammadi")
-                .email("ali"+counter+"@gmail.com")
+                .email("ali" + counter + "@gmail.com")
                 .credit(400000)
-                .username("ali"+counter)
+                .username("ali" + counter)
                 .password("ali12345")
                 .registrationDate(LocalDateTime.now())
                 .build();
         assistance = Assistance.builder()
-                .title("Cleaning"+counter)
+                .title("Cleaning" + counter)
                 .build();
         subAssistance = SubAssistance.builder()
                 .assistance(assistance)
-                .title("house cleaning"+counter)
+                .title("house cleaning" + counter)
                 .basePrice(100000)
                 .about("All house cleaning services")
-                .technicians(new ArrayList<>(List.of()))
+                .technicians(new ArrayList<>())
                 .build();
         manager = Manager.builder()
                 .firstName("amirhossein")
                 .lastName("ahmadi")
-                .email("amirhossein"+counter+"@gmail.com")
-                .username("amirhossein"+counter)
+                .email("amirhossein" + counter + "@gmail.com")
+                .username("amirhossein" + counter)
                 .password("amir1234")
                 .registrationDate(LocalDateTime.now())
                 .build();
@@ -92,25 +93,28 @@ class OrderServiceImplTest {
                 .orderRegistrationDateAndTime(LocalDateTime.now())
                 .orderDescription(orderDescription)
                 .orderStatus(OrderStatus.WAITING_FOR_TECHNICIANS_SUGGESTIONS)
+                .technicianSuggestions(new ArrayList<>())
                 .technicianScore(1).build();
         technician = Technician.builder()
                 .firstName("omid")
                 .lastName("omidi")
-                .email("omid"+counter+"@gmail.com")
+                .email("omid" + counter + "@gmail.com")
 //                .image(Files.readAllBytes(Path.of("C:\\Users\\AmirHossein\\IdeaProjects\\anyTask\\image_input\\technician_01.jpg")))
                 .credit(0)
-                .score(0)
+                .score(5)
                 .username("omid" + counter)
                 .password("omid1234")
                 .isActive(true)
+                .subAssistances(new ArrayList<>())
                 .technicianStatus(TechnicianStatus.APPROVED)
+                .registrationDate(LocalDateTime.of(2022,6,12,14,25))
                 .build();
         technicianSuggestion = TechnicianSuggestion.builder()
                 .technician(technician)
                 .order(order)
                 .DateAndTimeOfTechSuggestion(LocalDateTime.now())
                 .taskEstimatedDuration(5)
-                .techSuggestedDate(LocalDateTime.of(2023,10,18,15,30))
+                .techSuggestedDate(LocalDateTime.of(2023, 10, 18, 15, 30))
                 .techSuggestedPrice(120000)
                 .build();
     }
@@ -118,18 +122,10 @@ class OrderServiceImplTest {
     @Test
     @org.junit.jupiter.api.Order(1)
     public void saveOrder(){
-        Order order = Order.builder()
-                .orderStatus(OrderStatus.WAITING_FOR_TECHNICIANS_SUGGESTIONS)
-                .orderDescription(orderDescription)
-                .customer(customer)
-                .subAssistance(subAssistance)
-                .orderRegistrationDateAndTime(LocalDateTime.now())
-                .technicianScore(1)
-                .build();
         customerService.saveOrUpdate(customer);
         assistanceService.saveOrUpdate(assistance);
         subAssistanceService.saveOrUpdate(subAssistance);
-        order = orderService.saveOrUpdate(order);
+        orderService.saveOrUpdate(order);
         Assertions.assertNotEquals(0,order.getId());
     }
 
@@ -138,15 +134,22 @@ class OrderServiceImplTest {
     @Transactional
     public void notShowOrdersToSomeOneNotManager(){
         customerService.saveOrUpdate(customer);
-        System.out.println(orderService.showAllOrders(customer.getUsername()));
+        assistanceService.saveOrUpdate(assistance);
+        subAssistanceService.saveOrUpdate(subAssistance);
+        orderService.saveOrUpdate(order);
+        Assertions.assertTrue(orderService.showAllOrders(customer.getUsername()).isEmpty());
     }
 
     @Test
     @org.junit.jupiter.api.Order(3)
     @Transactional
     public void showOrdersToManager(){
+        customerService.saveOrUpdate(customer);
+        assistanceService.saveOrUpdate(assistance);
+        subAssistanceService.saveOrUpdate(subAssistance);
+        orderService.saveOrUpdate(order);
         managerService.saveOrUpdate(manager);
-        System.out.println(orderService.showAllOrders(manager.getUsername()));
+        Assertions.assertFalse(orderService.showAllOrders(manager.getUsername()).isEmpty());
     }
 
     @Test
@@ -158,6 +161,8 @@ class OrderServiceImplTest {
         subAssistanceService.saveOrUpdate(subAssistance);
         orderService.makeOrder(customer.getUsername(), assistance.getTitle(), subAssistance.getTitle(),orderDescription);
 
+        List<Order> ordersOfCustomer = orderService.findByCustomer(customer);
+        Assertions.assertFalse(ordersOfCustomer.isEmpty());
     }
 
     @Test
@@ -176,34 +181,30 @@ class OrderServiceImplTest {
         assistanceService.saveOrUpdate(assistance);
         subAssistanceService.saveOrUpdate(subAssistance);
         orderService.saveOrUpdate(order);
+        long id = order.getId();
         orderService.delete(order);
-    }
 
-    @Test
-    @org.junit.jupiter.api.Order(7)
-    public void deleteInvalidOrderThrowsRuntimeExcepton(){
-        Order invalidOrder = Order.builder()
-                .customer(customer)
-                .orderDescription(orderDescription)
-                        .build();
-
-        orderService.delete(invalidOrder);
+        Assertions.assertNull(orderService.findById(id));
     }
 
     @Test
     @org.junit.jupiter.api.Order(8)
-    public void findById(){
+    public void findOrderById(){
         customerService.saveOrUpdate(customer);
         assistanceService.saveOrUpdate(assistance);
         subAssistanceService.saveOrUpdate(subAssistance);
         orderService.saveOrUpdate(order);
-        orderService.findById(order.getId());
-        Assertions.assertNotNull(order.getId());
+
+        Assertions.assertNotNull(orderService.findById(order.getId()));
     }
 
     @Test
     @org.junit.jupiter.api.Order(9)
-    public void getOrdersOfSpecificTechnicianWithNoOrders(){
+    public void getOrdersOfSpecificTechnician_NotRelatedToAnySubAssistanceOfOrders(){
+        customerService.saveOrUpdate(customer);
+        assistanceService.saveOrUpdate(assistance);
+        subAssistanceService.saveOrUpdate(subAssistance);
+        orderService.saveOrUpdate(order);
         technicianService.saveOrUpdate(technician);
         List<OrderDTO> orders = orderService.findRelatedOrders(technician);
         Assertions.assertTrue(orders.isEmpty());
@@ -218,20 +219,22 @@ class OrderServiceImplTest {
         subAssistance.getTechnicians().add(technician);
         technicianService.saveOrUpdate(technician);
         subAssistanceService.saveOrUpdate(subAssistance);
-        order = orderService.saveOrUpdate(order);
+        orderService.saveOrUpdate(order);
         Assertions.assertFalse(orderService.findRelatedOrders(technician).isEmpty());
     }
 
     @Test
     @org.junit.jupiter.api.Order(11)
+    @Transactional
     public void techniciansCanSendSuggestionToRelatedOrders(){
         customerService.saveOrUpdate(customer);
         assistanceService.saveOrUpdate(assistance);
         technicianService.saveOrUpdate(technician);
         subAssistance.getTechnicians().add(technician);
         subAssistanceService.saveOrUpdate(subAssistance);
-        order = orderService.saveOrUpdate(order);
+        orderService.saveOrUpdate(order);
         orderService.sendTechnicianSuggestion(technician,order,technicianSuggestion);
+        Assertions.assertFalse(order.getTechnicianSuggestions().isEmpty());
     }
 
     @Test
@@ -243,7 +246,4 @@ class OrderServiceImplTest {
         orderService.saveOrUpdate(order);
         Assertions.assertFalse(orderService.findByCustomer(customer).isEmpty());
     }
-
-
-
 }

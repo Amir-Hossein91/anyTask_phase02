@@ -20,10 +20,10 @@ public class ApplicationContext {
     public static final Scanner input;
 
     static{
-        sourceAddress = "image_input";
+        sourceAddress = "C:\\Users\\AmirHossein\\IdeaProjects\\anyTask\\image_input";
         imageName = "technician_01";
         imageExtension = "jpg";
-        inputPath = Paths.get(sourceAddress,imageName+"."+imageExtension);
+        inputPath = Path.of("C:\\Users\\AmirHossein\\IdeaProjects\\anyTask\\image_input\\technician_01.jpg");
         outputPath = Paths.get("image_output/" + imageName + ".jpg");
         currentPersianDate = PersianDate.now();
         currentDate = currentPersianDate.toGregorian();

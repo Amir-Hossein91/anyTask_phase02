@@ -5,6 +5,7 @@ import com.example.phase_02.entity.Manager;
 import com.example.phase_02.entity.Person;
 import com.example.phase_02.entity.Technician;
 import com.example.phase_02.entity.enums.TechnicianStatus;
+import com.example.phase_02.utility.ApplicationContext;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -140,7 +141,9 @@ class PersonServiceImplTest {
     @Test
     @Order(7)
     public void technicianCanRegisterInApp() throws IOException {
-        personService.registerTechnician(technician);
+        Path input = ApplicationContext.inputPath;
+        Path output = ApplicationContext.outputPath;
+        personService.registerTechnician(technician,input,output);
         Assertions.assertFalse(technician.getId()==0);
     }
 

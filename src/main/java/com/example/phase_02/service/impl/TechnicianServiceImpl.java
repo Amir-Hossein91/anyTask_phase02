@@ -2,6 +2,7 @@ package com.example.phase_02.service.impl;
 
 import com.example.phase_02.basics.baseService.impl.BaseServiceImpl;
 import com.example.phase_02.entity.*;
+import com.example.phase_02.entity.dto.OrderDTO;
 import com.example.phase_02.entity.enums.TechnicianStatus;
 import com.example.phase_02.exceptions.*;
 import com.example.phase_02.repository.TechnicianRepository;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -228,10 +228,10 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
         }
     }
 
-    public List<String> showAllTechnicians(String managerUsername){
+    public List<Technician> showAllTechnicians(String managerUsername){
         Manager manager = managerService.findByUsername(managerUsername);
         if(manager != null){
-            return findAll().stream().map(Object::toString).toList();
+            return findAll();
         }
         else{
             printer.printError("Only manager can see the list of all technicians");
@@ -239,15 +239,14 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
         }
     }
 
-    public List<String> seeUnapprovedTechnicians(String managerUsername){
+    public List<Technician> seeUnapprovedTechnicians(String managerUsername){
 
         Manager manager = managerService.findByUsername(managerUsername);
-        if(manager == null){
+        if(manager != null){
             try{
                 List<Technician> technicians = repository.findUnapproved().orElse(null);
                 if(technicians == null || technicians.isEmpty())
                     throw new NotFoundException(Constants.NO_UNAPPROVED_TECHNICIANS);
-                List<String> result = technicians.stream().map(Object::toString).toList();
                 boolean isListChanged = false;
                 for(Technician t : technicians){
                     if(t.getTechnicianStatus()==TechnicianStatus.NEW){
@@ -257,7 +256,7 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
                 }
                 if(isListChanged)
                     saveOrUpdate(technicians);
-                return result;
+                return technicians;
             } catch (NotFoundException e){
                 printer.printError(e.getMessage());
                 return null;
@@ -270,7 +269,7 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
         }
     }
 
-    public List<String> seeDeactivatedTechnicians(String managerUsername){
+    public List<Technician> seeDeactivatedTechnicians(String managerUsername){
 
         Manager manager = managerService.findByUsername(managerUsername);
         if(manager != null){
@@ -278,7 +277,7 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
                 List<Technician> technicians = repository.findDeactivated().orElse(null);
                 if(technicians == null || technicians.isEmpty())
                     throw new NotFoundException(Constants.NO_DEACTIVATED_TECHNICIANS);
-                return technicians.stream().map(Object::toString).toList();
+                return technicians;
             } catch (NotFoundException e){
                 printer.printError(e.getMessage());
                 return null;
@@ -291,14 +290,14 @@ public class TechnicianServiceImpl extends BaseServiceImpl<Technician> implement
         }
     }
 
-    public List<String> findRelativeOrders(String technicianUsername){
+    public List<OrderDTO> findRelatedOrders(String technicianUsername){
         Technician technician = findByUsername(technicianUsername);
         if(technician != null){
             try{
                 if(!technician.isActive())
                     throw new DeactivatedTechnicianException(Constants.DEACTIVATED_TECHNICIAN);
 
-               return orderService.findRelatedOrders(technician).stream().map(Object::toString).toList();
+               return orderService.findRelatedOrders(technician);
             } catch (DeactivatedTechnicianException e) {
                 printer.printError(e.getMessage());
                 return List.of();

@@ -89,16 +89,7 @@ public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> imp
         return repository.findByTitleAndAssistance(title, assistance).orElse(null);
     }
 
-    public SubAssistance specifySubAssistance(Assistance assistance, String title){
-        printer.getInput("base price");
-        long basePrice = input.nextLong();
-        input.nextLine();
-        printer.getInput("descriptions");
-        String description = input.nextLine();
-        return SubAssistance.builder().assistance(assistance).title(title).basePrice(basePrice).about(description).build();
-    }
-
-    public void addSubAssistance(String username, String assistanceTitle, String subAssistanceTitle){
+    public void addSubAssistance(String username, String assistanceTitle, String subAssistanceTitle,Long basePrice, String description){
         Manager manager = managerService.findByUsername(username);
         if(manager != null){
             try{
@@ -107,7 +98,13 @@ public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> imp
                     throw new NoSuchAsssistanceCategoryException(Constants.NO_SUCH_ASSISTANCE_CATEGORY);
                 if(findSubAssistance(subAssistanceTitle,assistance) != null)
                     throw new DuplicateSubAssistanceException(Constants.SUBASSISTANCE_ALREADY_EXISTS);
-                saveOrUpdate(specifySubAssistance(assistance, subAssistanceTitle));
+                SubAssistance subAssistance = SubAssistance.builder()
+                        .assistance(assistance)
+                        .title(subAssistanceTitle)
+                        .basePrice(basePrice)
+                        .about(description)
+                        .build();
+                saveOrUpdate(subAssistance);
             } catch (DuplicateSubAssistanceException | NoSuchAsssistanceCategoryException e) {
                 printer.printError(e.getMessage());
             }
@@ -192,7 +189,7 @@ public class SubAssistanceServiceImpl extends BaseServiceImpl<SubAssistance> imp
             }
         }
         else {
-            printer.printError(("Only manager can change description of a sub-assistance"));
+            printer.printError(("Only manager can change base price of a sub-assistance"));
         }
     }
 }

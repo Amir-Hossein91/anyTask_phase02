@@ -3,6 +3,7 @@ package com.example.phase_02.service.impl;
 import com.example.phase_02.basics.baseService.impl.BaseServiceImpl;
 import com.example.phase_02.entity.Assistance;
 import com.example.phase_02.entity.Manager;
+import com.example.phase_02.entity.Person;
 import com.example.phase_02.entity.Technician;
 import com.example.phase_02.exceptions.DeactivatedTechnicianException;
 import com.example.phase_02.exceptions.DuplicateAssistanceException;
@@ -22,15 +23,15 @@ public class AssistanceServiceImpl extends BaseServiceImpl<Assistance> implement
     private final AssistanceRepository repository;
 
     private final ManagerServiceImpl managerService;
-    private final TechnicianServiceImpl technicianService;
+    private final PersonServiceImpl personService;
 
     public AssistanceServiceImpl(AssistanceRepository repository,
                                  ManagerServiceImpl managerService,
-                                 @Lazy TechnicianServiceImpl technicianService) {
+                                 @Lazy PersonServiceImpl personService) {
         super();
         this.repository = repository;
         this.managerService = managerService;
-        this.technicianService = technicianService;
+        this.personService = personService;
     }
 
     @Override
@@ -89,13 +90,12 @@ public class AssistanceServiceImpl extends BaseServiceImpl<Assistance> implement
         return repository.findByTitle(assistanceName).orElse(null);
     }
 
-    public void addAssistance(String username, String assistanceName){
+    public void addAssistance(String username, Assistance assistance){
         Manager manager = managerService.findByUsername(username);
         if(manager != null){
             try {
-                if (findAssistance(assistanceName) != null)
+                if (findAssistance(assistance.getTitle()) != null)
                     throw new DuplicateAssistanceException(Constants.ASSISTANCE_ALREADY_EXISTS);
-                Assistance assistance = Assistance.builder().title(assistanceName).build();
                 saveOrUpdate(assistance);
             } catch (DuplicateAssistanceException e ){
                 printer.printError(e.getMessage());
@@ -106,11 +106,11 @@ public class AssistanceServiceImpl extends BaseServiceImpl<Assistance> implement
     }
 
     public List<String> seeAssistances(String personUsername){
-        Technician technician = technicianService.findByUsername(personUsername);
+        Person person = personService.findByUsername(personUsername);
         try {
-            if(technician == null)
+            if(person == null)
                 throw new NotFoundException(Constants.INVALID_USERNAME);
-            if(technician != null && !(technician.isActive()))
+            if(person instanceof Technician && !((Technician) person).isActive())
                 throw new DeactivatedTechnicianException(Constants.DEACTIVATED_TECHNICIAN);
             return findAll().stream().map(Object::toString).toList();
         } catch (NotFoundException | DeactivatedTechnicianException e) {

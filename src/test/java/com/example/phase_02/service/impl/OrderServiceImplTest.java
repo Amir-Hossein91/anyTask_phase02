@@ -9,7 +9,6 @@ import com.example.phase_02.service.OrderDescriptionService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.LocalDateTime;
@@ -99,7 +98,6 @@ class OrderServiceImplTest {
                 .firstName("omid")
                 .lastName("omidi")
                 .email("omid" + counter + "@gmail.com")
-//                .image(Files.readAllBytes(Path.of("C:\\Users\\AmirHossein\\IdeaProjects\\anyTask\\image_input\\technician_01.jpg")))
                 .credit(0)
                 .score(5)
                 .username("omid" + counter)
@@ -131,7 +129,6 @@ class OrderServiceImplTest {
 
     @Test
     @org.junit.jupiter.api.Order(2)
-    @Transactional
     public void notShowOrdersToSomeOneNotManager(){
         customerService.saveOrUpdate(customer);
         assistanceService.saveOrUpdate(assistance);
@@ -142,7 +139,6 @@ class OrderServiceImplTest {
 
     @Test
     @org.junit.jupiter.api.Order(3)
-    @Transactional
     public void showOrdersToManager(){
         customerService.saveOrUpdate(customer);
         assistanceService.saveOrUpdate(assistance);
@@ -154,7 +150,6 @@ class OrderServiceImplTest {
 
     @Test
     @org.junit.jupiter.api.Order(4)
-    @Transactional
     public void CustomersCanMakeOrders(){
         customerService.saveOrUpdate(customer);
         assistanceService.saveOrUpdate(assistance);
@@ -227,7 +222,6 @@ class OrderServiceImplTest {
 
     @Test
     @org.junit.jupiter.api.Order(11)
-    @Transactional
     public void techniciansCanSendSuggestionToRelatedOrders(){
         customerService.saveOrUpdate(customer);
         assistanceService.saveOrUpdate(assistance);

@@ -172,7 +172,14 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
             List<Order> orders = repository.findRelatedOrders(technician).orElseThrow(
                     () -> new NotFoundException(Constants.NO_RELATED_ORDERS)
             );
-            if(!orders.contains(order))
+            boolean isFound = false;
+            for(Order o: orders){
+                if(o.getId()==order.getId()){
+                    isFound = true;
+                    break;
+                }
+            }
+            if(!isFound)
                 throw new NotFoundException(Constants.ORDER_IS_NOT_RELATED);
 
             if(technicianSuggestion != null){

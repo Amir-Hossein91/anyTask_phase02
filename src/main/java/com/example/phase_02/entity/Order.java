@@ -38,7 +38,7 @@ public class Order extends BaseEntity {
     @Range(min = 1, max = 5, message = "Technician score should be between 1 and 5")
     @Column(name = "technician_score")
     private int technicianScore;
-    @OneToMany(mappedBy = "order")
+    @OneToMany(mappedBy = "order",fetch = FetchType.EAGER)
     @Cascade(value = org.hibernate.annotations.CascadeType.MERGE)
     @Column(name = "technician_suggestions")
     private List<TechnicianSuggestion> technicianSuggestions;

@@ -55,7 +55,7 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
         }
     }
 
-    public void makeOrder(String customerUsername, String assistanceTitle, String subAssistanceTitle, OrderDescription orderDescription){
+    public Order makeOrder(String customerUsername, String assistanceTitle, String subAssistanceTitle, OrderDescription orderDescription){
         Customer customer = customerService.findByUsername(customerUsername);
         if( customer != null){
             try{
@@ -73,14 +73,19 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
                         .technicianScore(1).build();
 
                 order = saveOrUpdate(order);
+
                 if(order != null)
                     printer.printMessage("Order saved successfully with id of: " + order.getId());
+                return order;
             } catch (NotFoundException | DateTimeException | IllegalArgumentException e) {
                 printer.printError(e.getMessage());
+                return null;
             }
         }
-        else
+        else {
             printer.printError("Only a customer can make an order");
+            return null;
+        }
     }
 
     @Override

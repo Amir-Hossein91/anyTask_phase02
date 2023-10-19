@@ -171,7 +171,9 @@ class OrderServiceImplTest {
         managerService.saveOrUpdate(manager);
         assistanceService.saveOrUpdate(assistance);
         subAssistanceService.saveOrUpdate(subAssistance);
-        orderService.makeOrder(manager.getUsername(), assistance.getTitle(), subAssistance.getTitle(),orderDescription);
+        Order madeByManager = orderService.makeOrder(manager.getUsername(), assistance.getTitle(), subAssistance.getTitle(),orderDescription);
+
+        Assertions.assertNull(madeByManager);
     }
 
     @Test

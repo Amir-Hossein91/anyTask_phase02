@@ -373,4 +373,27 @@ class TechnicianServiceImplTest {
         Assertions.assertTrue(secondOrder.getTechnicianSuggestions().isEmpty());
 
     }
+
+    @Test
+    @org.junit.jupiter.api.Order(16)
+    @Transactional
+    public void technicianCanNotSendSuggestionToOrdersWhichAreRelatedToHimButAreNotInProperState(){
+
+        technicianCanSeeListOfOrdersRelatedToHim();
+
+        order.setOrderStatus(OrderStatus.STARTED);
+        orderService.saveOrUpdate(order);
+
+        technicianSuggestionService.saveOrUpdate(technicianSuggestion);
+        secondTechnicianSuggestion.setTechnician(technician);
+        secondTechnicianSuggestion.setOrder(secondOrder);
+        technicianSuggestionService.saveOrUpdate(secondTechnicianSuggestion);
+
+        technicianService.sendTechnicianSuggestion(technician.getUsername(),order.getId(),technicianSuggestion);
+        technicianService.sendTechnicianSuggestion(technician.getUsername(),secondOrder.getId(),secondTechnicianSuggestion);
+
+        Assertions.assertTrue(order.getTechnicianSuggestions().isEmpty());
+        Assertions.assertTrue(secondOrder.getTechnicianSuggestions().isEmpty());
+
+    }
 }

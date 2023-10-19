@@ -245,6 +245,7 @@ class CustomerServiceImplTest {
 
         List<TechnicianSuggestionDTO> suggestions = customerService.seeTechnicianSuggestionsOrderedByPrice(firstCustomer.getUsername(), order.getId());
         Assertions.assertTrue(suggestions.get(0).getSuggestedPrice()<=suggestions.get(1).getSuggestedPrice());
+        Assertions.assertEquals(OrderStatus.CHOOSING_TECHNICIAN,order.getOrderStatus());
     }
 
     @Test
@@ -266,6 +267,7 @@ class CustomerServiceImplTest {
 
         List<TechnicianSuggestionDTO> suggestions = customerService.seeTechnicianSuggestionsOrderedByScore(firstCustomer.getUsername(), order.getId());
         Assertions.assertTrue(suggestions.get(0).getTechnicianScore()>=suggestions.get(1).getTechnicianScore());
+        Assertions.assertEquals(OrderStatus.CHOOSING_TECHNICIAN,order.getOrderStatus());
     }
 
     @Test
@@ -299,6 +301,18 @@ class CustomerServiceImplTest {
         customerService.markOrderAsStarted(firstCustomer.getUsername(), order.getId(), technicianSuggestion.getId());
 
         Assertions.assertEquals(OrderStatus.STARTED,order.getOrderStatus());
+    }
+
+    @Test
+    @org.junit.jupiter.api.Order(12)
+    @Transactional
+    public void customerCanNotMarkAnOrderAsStartedIfSuggestionDateIsAfterCurrentDate(){
+        technicianSuggestion.setTechSuggestedDate(LocalDateTime.of(2023,10,25,12,30));
+        customerCanChooseARelatedTechnicianSuggestion();
+
+        customerService.markOrderAsStarted(firstCustomer.getUsername(), order.getId(), technicianSuggestion.getId());
+
+        Assertions.assertNotEquals(OrderStatus.STARTED,order.getOrderStatus());
     }
 
     @Test
